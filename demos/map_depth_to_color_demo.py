@@ -18,7 +18,7 @@ def mouse_event(event, x, y, flags, param):
 def main():
     global depth_points
     # Create Kinect object and initialize
-    kin = pyk4.Kinect(resolution=1080, wide_fov=True, binned=True)
+    kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True)
     
     # get calibration objects
     depth_calib = kin.getDepthCalibration()

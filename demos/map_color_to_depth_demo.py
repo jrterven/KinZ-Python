@@ -18,12 +18,15 @@ def mouse_event(event, x, y, flags, param):
 def main():
     global color_coords
     # Create Kinect object and initialize
-    kin = pyk4.Kinect(resolution=720, wide_fov=True, binned=True)
+    kin = pyk4.Kinect(resolution=720, wfov=True, binned=True)
 
     cv2.namedWindow('Color', cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow('Depth', cv2.WINDOW_AUTOSIZE)
     cv2.setMouseCallback('Color', mouse_event)
 
+    points_3d = []
+    prev_points_3d = []
+    
     while True:
         if kin.getFrames(getColor=True, getDepth=True, getIR=False):
             # get buffer data from Kinect
@@ -39,7 +42,6 @@ def main():
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(
                             depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-            ## Here is where the magic happens ...
             # Project color image points to depth image
             # color_coords is a list of value pairs [[xc1,yc1], [xc2,yc2], ...]
             # depth_coords have the same format as color_coords
@@ -61,21 +63,24 @@ def main():
             points_3d = kin.map_coords_color_2d_to_3D(color_coords,
                                                       depth_reference=False)
 
+            if points_3d != prev_points_3d:
+                print("3D point:", points_3d)
+
             ## Visualization
             # Draw color image points
             for p in color_coords:                                          
                 cv2.circle(color_image,(p[0], p[1]), 8, (0,0,255), -1)
 
-            # Draw and print depth points
-            print("Depths: ", end="")
+            # Draw depth points
             for p in depth_coords:
                 cv2.circle(depth_colormap,(p[0], p[1]), 5, (0,0,255), -1)
-                print("[%2d] " % depth_image[p[1], p[0]], end="")
             
             cv2.imshow('Depth', depth_colormap)
             cv2.imshow('Color', color_image)
 
-        k = cv2.waitKey(33) & 0xFF
+        prev_points_3d = points_3d
+
+        k = cv2.waitKey(1) & 0xFF
         if k == ord('c'):
             color_coords = []
         if k ==27:

@@ -1,0 +1,9 @@
+name: pyk4
+dependencies:
+  - python=3.6
+  - numpy
+  - pyyaml
+  - pip
+  - pip:
+    - opencv-contrib-python
+    
