@@ -14,7 +14,11 @@ import cv2
 import pyk4
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True, framerate=30)
+kin = pyk4.Kinect(resolution=3072, wfov=True, binned=True, framerate=30)
+
+# Get depth aligned with color?
+align_frames = True
+image_scale = 0.25    # visualized image scale
 
 # initialize fps counter
 t = cv2.getTickCount()
@@ -28,7 +32,7 @@ while True:
     # read kinect frames. If frames available return 1
     if kin.getFrames(getColor=True, getDepth=True, getIR=True):
         color_data = kin.getColorData()
-        depth_data = kin.getDepthData(align=False)
+        depth_data = kin.getDepthData(align=align_frames)
         ir_data = kin.getIRData()
 
         # extract frames to np arrays
@@ -50,8 +54,10 @@ while True:
         ir_image = cv2.convertScaleAbs(ir_image, alpha=0.04)
 
         # Resize images
-        #depth_small = cv2.resize(depth_colormap, None, fx=0.5, fy=0.5)
-        color_small = cv2.resize(color_image, None, fx=0.5, fy=0.5)
+        if align_frames:
+          depth_colormap = cv2.resize(depth_colormap, None, fx=image_scale, fy=image_scale)
+
+        color_small = cv2.resize(color_image, None, fx=image_scale, fy=image_scale)
         size = color_small.shape[0:2]
         cv2.putText(color_small, "{0:.2f}-FPS".format(fps), (20, size[0]-20), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
 
