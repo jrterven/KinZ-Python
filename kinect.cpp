@@ -484,13 +484,13 @@ void Kinect::setGain(int gain) {
 }
 
 
-std::vector<std::vector<int> > Kinect::map_coords_color_2d_to_depth_2d(std::vector<std::vector<int> > &color_coords) {
+std::vector<std::vector<int> > Kinect::map_coords_color_to_depth(std::vector<std::vector<int> > &color_coords) {
     k4a_float2_t init_coords, depth_coords;
     std::vector<std::vector<int> > final_coords;
     int val;
     k4a_result_t res;
 
-    for(int i=0; i < color_coords.size(); i++) {
+    for(unsigned int i=0; i < color_coords.size(); i++) {
         std::vector<int> d_coords;
         init_coords.xy.x = color_coords[i][0];
         init_coords.xy.y = color_coords[i][1];
@@ -508,7 +508,7 @@ std::vector<std::vector<int> > Kinect::map_coords_color_2d_to_depth_2d(std::vect
     return final_coords;
 }
 
-std::vector<std::vector<int> > Kinect::map_coords_color_2d_to_3D(
+std::vector<std::vector<int> > Kinect::map_coords_color_to_3D(
                             std::vector<std::vector<int> > &color_coords,
                             bool depth_reference) {
     std::vector<std::vector<int> > depth_coords;
@@ -524,10 +524,10 @@ std::vector<std::vector<int> > Kinect::map_coords_color_2d_to_3D(
     uint16_t *depth_data = (uint16_t *)(void *)k4a_image_get_buffer(m_image_d);
 
     // from color to depth
-    depth_coords = this->map_coords_color_2d_to_depth_2d(color_coords);
+    depth_coords = this->map_coords_color_to_depth(color_coords);
 
     // from depth to 3D
-    for(int i=0; i < depth_coords.size(); i++) {
+    for(unsigned int i=0; i < depth_coords.size(); i++) {
         std::vector<int> coords3d_vect;
         k4a_float2_t coordsdepth;
         k4a_float3_t coords3d;
@@ -560,6 +560,36 @@ std::vector<std::vector<int> > Kinect::map_coords_color_2d_to_3D(
         final_coords.push_back(coords3d_vect);
     }
 
+    return final_coords;
+}
+
+std::vector<std::vector<int> > Kinect::map_coords_depth_to_color(std::vector<std::vector<int> > &depth_coords) {
+    k4a_float2_t init_coords, color_coords;
+    std::vector<std::vector<int> > final_coords;
+    int val;
+    k4a_result_t res;
+
+    int h = k4a_image_get_height_pixels(m_image_d);
+    uint16_t *depth_data = (uint16_t *)(void *)k4a_image_get_buffer(m_image_d);
+
+    for(unsigned int i=0; i < depth_coords.size(); i++) {
+        std::vector<int> c_coords;
+        init_coords.xy.x = depth_coords[i][0];
+        init_coords.xy.y = depth_coords[i][1];
+        float depth = (float)depth_data[h*depth_coords[i][1] + depth_coords[i][0]];
+        res = k4a_calibration_2d_to_2d(&m_calibration, &init_coords, depth,
+                                       K4A_CALIBRATION_TYPE_DEPTH, K4A_CALIBRATION_TYPE_COLOR,
+                                       &color_coords, &val);
+        if(res == K4A_RESULT_SUCCEEDED) {
+            c_coords.push_back(color_coords.xy.x);
+            c_coords.push_back(color_coords.xy.y);
+        }
+        else {
+            c_coords.push_back(-1);
+            c_coords.push_back(-1);
+        }
+        final_coords.push_back(c_coords);
+    }
     return final_coords;
 }
 

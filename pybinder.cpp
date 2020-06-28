@@ -60,9 +60,11 @@ PYBIND11_MODULE(pyk4, m) {
         .def("setGain", &Kinect::setExposure, "Set sensor gain",
             py::arg("gain"))
         .def("getExposure", &Kinect::getExposure, "Get exposure time")
-        .def("map_coords_color_2d_to_depth_2d", &Kinect::map_coords_color_2d_to_depth_2d,
+        .def("map_coords_color_to_depth", &Kinect::map_coords_color_to_depth,
             "Map color pixel coordinates to depth image space")
-        .def("map_coords_color_2d_to_3D", &Kinect::map_coords_color_2d_to_3D,
+        .def("map_coords_color_to_3D", &Kinect::map_coords_color_to_3D,
             "Map color pixel coordinates to 3D space of depth camera",
-            py::arg("color_coords"), py::arg("depth_reference")=true);
+            py::arg("color_coords"), py::arg("depth_reference")=true)
+        .def("map_coords_depth_to_color", &Kinect::map_coords_depth_to_color,
+            "Map depth pixel coordinates to color image space");
 }

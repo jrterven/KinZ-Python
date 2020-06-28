@@ -20,9 +20,11 @@ def main():
     # Create Kinect object and initialize
     kin = pyk4.Kinect(resolution=720, wfov=True, binned=True)
 
-    cv2.namedWindow('Color', cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow('Depth', cv2.WINDOW_AUTOSIZE)
-    cv2.setMouseCallback('Color', mouse_event)
+    depth_window_name = 'Mapped coordinates to Depth image'
+    color_window_name = 'Clico on the Color image'
+    cv2.namedWindow(color_window_name, cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow(depth_window_name, cv2.WINDOW_AUTOSIZE)
+    cv2.setMouseCallback(color_window_name, mouse_event)
 
     points_3d = []
     prev_points_3d = []
@@ -49,7 +51,7 @@ def main():
             # at the desire location, 
             # e.g. if at [x2, y2] the depth is 0 depth_coords = [[xd1, yd1], [-1, -1]]
             # we select -1 because there can not be negative pixel coordinates
-            depth_coords = kin.map_coords_color_2d_to_depth_2d(color_coords)
+            depth_coords = kin.map_coords_color_to_depth(color_coords)
 
             # Backproject color image points to 3D depth camera space
             # points_3d is a list of triplets of X, Y, Z points in
@@ -60,7 +62,7 @@ def main():
             # there is not depth available. 
             # E.g. if at [x2, y2] the depth is 0, points_3d = [[X1, Y1, Z1], [0, 0, 0]]
             # we select 0 because depth = 0 means no depth data.
-            points_3d = kin.map_coords_color_2d_to_3D(color_coords,
+            points_3d = kin.map_coords_color_to_3D(color_coords,
                                                       depth_reference=False)
 
             if points_3d != prev_points_3d:
@@ -75,8 +77,8 @@ def main():
             for p in depth_coords:
                 cv2.circle(depth_colormap,(p[0], p[1]), 5, (0,0,255), -1)
             
-            cv2.imshow('Depth', depth_colormap)
-            cv2.imshow('Color', color_image)
+            cv2.imshow(depth_window_name, depth_colormap)
+            cv2.imshow(color_window_name, color_image)
 
         prev_points_3d = points_3d
 

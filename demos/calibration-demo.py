@@ -8,7 +8,7 @@ import cv2
 import pyk4
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=2160, wfov=True, binned=True)
+kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True)
 
 # get calibration objects
 depth_calib = kin.getDepthCalibration()

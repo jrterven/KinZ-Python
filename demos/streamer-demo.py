@@ -2,22 +2,19 @@
   Kinect for Azure Color, Depth and Infrared streaming in Python
 
   Supported resolutions:
-  720:  1280 x 720 @ 25 FPS  binned depth
-  1080: 1920 x 1080 @ 24 FPS binned depth
-  1440: 2560 x 1440 @ 22 FPS binned depth
-  1535: 2048 x 1536 @ 23 FPS binned depth
-  2160: 3840 x 2160 @ 20 FPS binned depth
-  3072: 4096 x 3072 @ 12 FPS binned depth
+  720:  1280 x 720 @ 30 FPS  binned depth
+  1080: 1920 x 1080 @ 30 FPS binned depth
+  1440: 2560 x 1440 @ 30 FPS binned depth
+  1535: 2048 x 1536 @ 30 FPS binned depth
+  2160: 3840 x 2160 @ 30 FPS binned depth
+  3072: 4096 x 3072 @ 15 FPS binned depth
 """
 import numpy as np 
 import cv2
 import pyk4
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=720, wfov=True, binned=True, framerate=30)
-kin.setGain(gain = 200)
-kin.setExposure(exposure = 8330)
-
+kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True, framerate=30)
 
 # initialize fps counter
 t = cv2.getTickCount()
@@ -31,7 +28,7 @@ while True:
     # read kinect frames. If frames available return 1
     if kin.getFrames(getColor=True, getDepth=True, getIR=True):
         color_data = kin.getColorData()
-        depth_data = kin.getDepthData(align=True)
+        depth_data = kin.getDepthData(align=False)
         ir_data = kin.getIRData()
 
         # extract frames to np arrays
@@ -39,7 +36,6 @@ while True:
         color_image = np.array(color_data, copy = True) # image is BGRA
         color_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR) # to BGR
         ir_image = np.array(ir_data, copy = True)
-        print("Current exposure:", kin.getExposure())
 
         print('Depth shape and type:', depth_image.shape, depth_image.dtype)
         print('Color shape type:', color_image.shape, color_image.dtype)
@@ -54,12 +50,12 @@ while True:
         ir_image = cv2.convertScaleAbs(ir_image, alpha=0.04)
 
         # Resize images
-        depth_small = cv2.resize(depth_colormap, None, fx=0.5, fy=0.5)
-        color_small = cv2.resize(color_image, None, fx=0.25, fy=0.25)
+        #depth_small = cv2.resize(depth_colormap, None, fx=0.5, fy=0.5)
+        color_small = cv2.resize(color_image, None, fx=0.5, fy=0.5)
         size = color_small.shape[0:2]
         cv2.putText(color_small, "{0:.2f}-FPS".format(fps), (20, size[0]-20), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
 
-        cv2.imshow('Depth', depth_small)
+        cv2.imshow('Depth', depth_colormap)
         cv2.imshow('Color', color_small)
         cv2.imshow('IR', ir_image)
 
@@ -72,9 +68,9 @@ while True:
 
     # increment frame counter and calculate FPS
     fps_count = fps_count + 1
-    if (fps_count == 20):
+    if (fps_count == 30):
       t = (cv2.getTickCount() - t)/cv2.getTickFrequency()
-      fps = 20.0/t
+      fps = 30.0/t
       fps_count = 0
 
 kin.close()  # close Kinect
