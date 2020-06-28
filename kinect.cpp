@@ -593,3 +593,48 @@ std::vector<std::vector<int> > Kinect::map_coords_depth_to_color(std::vector<std
     return final_coords;
 }
 
+std::vector<std::vector<int> > Kinect::map_coords_depth_to_3D(
+                            std::vector<std::vector<int> > &depth_coords) {
+    std::vector<std::vector<int> > final_coords;
+
+    // get the depth data
+    int h = k4a_image_get_height_pixels(m_image_d);
+    uint16_t *depth_data = (uint16_t *)(void *)k4a_image_get_buffer(m_image_d);
+
+    // from depth to 3D
+    for(unsigned int i=0; i < depth_coords.size(); i++) {
+        std::vector<int> coords3d_vect;
+        k4a_float2_t coordsdepth;
+        k4a_float3_t coords3d;
+        int valid;
+        if(depth_coords[i][0] != -1 && depth_coords[i][1] != -1) {
+            coordsdepth.xy.x = depth_coords[i][0];
+            coordsdepth.xy.y = depth_coords[i][1];
+            // get depth value
+            float depth = (float)depth_data[h*depth_coords[i][1] + depth_coords[i][0]];
+            k4a_calibration_2d_to_3d(&m_calibration, &coordsdepth, depth, 
+                                     K4A_CALIBRATION_TYPE_DEPTH, 
+                                     K4A_CALIBRATION_TYPE_DEPTH,
+                                     &coords3d, &valid);
+            if(valid == 1) {
+                coords3d_vect.push_back(coords3d.xyz.x);
+                coords3d_vect.push_back(coords3d.xyz.y);
+                coords3d_vect.push_back(coords3d.xyz.z);
+            }
+            else {
+                coords3d_vect.push_back(0);
+                coords3d_vect.push_back(0);
+                coords3d_vect.push_back(0);
+            }
+        }
+        else {
+                coords3d_vect.push_back(0);
+                coords3d_vect.push_back(0);
+                coords3d_vect.push_back(0);
+        }
+        final_coords.push_back(coords3d_vect);
+    }
+
+    return final_coords;
+}
+

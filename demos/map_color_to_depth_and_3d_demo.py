@@ -3,6 +3,7 @@
 
     How to use:
     - Clic on the color image to show the corresponding point on depth image
+      and the 3D coordinates
 """
 import numpy as np 
 import cv2

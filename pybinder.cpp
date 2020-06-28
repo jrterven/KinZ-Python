@@ -66,5 +66,8 @@ PYBIND11_MODULE(pyk4, m) {
             "Map color pixel coordinates to 3D space of depth camera",
             py::arg("color_coords"), py::arg("depth_reference")=true)
         .def("map_coords_depth_to_color", &Kinect::map_coords_depth_to_color,
-            "Map depth pixel coordinates to color image space");
+            "Map depth pixel coordinates to color image space")
+        .def("map_coords_depth_to_3D", &Kinect::map_coords_depth_to_3D,
+            "Map depth pixel coordinates to 3D space of depth camera",
+            py::arg("depth_coords"));
 }

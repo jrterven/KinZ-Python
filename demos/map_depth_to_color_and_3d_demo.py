@@ -3,6 +3,7 @@
 
     How to use:
     - Clic on the depth image to show the corresponding point on color image
+      and the 3D coordinates
 """
 import numpy as np 
 import cv2
@@ -26,6 +27,9 @@ def main():
     cv2.namedWindow(depth_window_name, cv2.WINDOW_AUTOSIZE)
     cv2.setMouseCallback(depth_window_name, mouse_event)
 
+    points_3d = []
+    prev_points_3d = []
+
     while True:
         if kin.getFrames(getColor=True, getDepth=True, getIR=False):
             color_data = kin.getColorData()
@@ -41,6 +45,20 @@ def main():
             # map_coords_depth_to_color return [-1, -1] if there is no depth information
             # at the desire location, or the transformation failed.
             color_points = kin.map_coords_depth_to_color(depth_points)
+
+            # Backproject depth image points to 3D depth camera space
+            # points_3d is a list of triplets of X, Y, Z points in
+            # the depth camera reference
+            # if depth_coords is [[x1,y1], [x2,y2], ...]
+            # points_3d is [[X1, Y1, Z1], [X2, Y2, Z2], ...]
+            # points_3d contains [0, 0, 0] if for desired depth coordinates
+            # there is not depth available. 
+            # E.g. if at [x2, y2] the depth is 0, points_3d = [[X1, Y1, Z1], [0, 0, 0]]
+            # we select 0 because depth = 0 means no depth data.
+            points_3d = kin.map_coords_depth_to_3D(depth_points)
+
+            if points_3d != prev_points_3d:
+                print("3D point:", points_3d)
 
             # Draw mapped points in color image
             for p in color_points:                                          
@@ -58,6 +76,7 @@ def main():
 
             cv2.imshow(depth_window_name, depth_colormap)
             cv2.imshow(color_window_name, color_small)
+        prev_points_3d = points_3d
 
         k = cv2.waitKey(1) & 0xFF
         if k == ord('c'):
