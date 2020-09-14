@@ -32,6 +32,22 @@ PYBIND11_MODULE(pyk4, m) {
         );
     });
 
+    py::class_<BufferPointCloud>(m, "BufferPointCloud", py::buffer_protocol())
+   .def_buffer([](BufferPointCloud &m) -> py::buffer_info {
+        return py::buffer_info(
+            m.data(),                              
+            sizeof(int16_t),                         
+            py::format_descriptor<int16_t>::format(),
+            3,                                     
+            { m.rows(), m.cols(), size_t(3)},                
+            { m.stride(),
+              sizeof(int16_t) * 3,
+              sizeof(int16_t)
+            }
+        );
+    });
+
+
     py::class_<Calibration>(m, "Calibration")
         .def(py::init())
         .def("getSize", &Calibration::getSize)
@@ -40,17 +56,49 @@ PYBIND11_MODULE(pyk4, m) {
         .def("getDistortionParams", &Calibration::getDistortionParams)
         .def("getRotationMatrix", &Calibration::getRotationMatrix)
         .def("getTranslationVector", &Calibration::getTranslationVector)
-        .def("getCameraPose", &Calibration::getCameraPose);
+        .def("getCameraPose", &Calibration::getCameraPose)
+        .def_readonly("width", &Calibration::width);
+
+
+    py::class_<Imu_sample>(m, "Imu_sample")
+        .def(py::init())
+        .def_readonly("temperature", &Imu_sample::temperature)
+        .def_readonly("acc_x", &Imu_sample::acc_x)
+        .def_readonly("acc_y", &Imu_sample::acc_y)
+        .def_readonly("acc_z", &Imu_sample::acc_z)
+        .def_readonly("acc_timestamp_usec", &Imu_sample::acc_timestamp_usec)
+        .def_readonly("gyro_x", &Imu_sample::gyro_x)
+        .def_readonly("gyro_y", &Imu_sample::gyro_y)
+        .def_readonly("gyro_z", &Imu_sample::gyro_z)
+        .def_readonly("gyro_timestamp_usec", &Imu_sample::gyro_timestamp_usec);
+
+    
+    py::class_<ColorData>(m, "ColorData")
+        .def(py::init())
+        .def_readonly("buffer", &ColorData::buffer)
+        .def_readonly("timestamp_nsec", &ColorData::timestamp_nsec);
+
+    
+    py::class_<DepthData>(m, "DepthData")
+        .def(py::init())
+        .def_readonly("buffer", &DepthData::buffer)
+        .def_readonly("timestamp_nsec", &DepthData::timestamp_nsec);
+
 
     py::class_<Kinect>(m, "Kinect")
-        .def(py::init<uint8_t, int, bool, bool, uint8_t, bool, bool, bool>(), py::arg("deviceIndex")=0, py::arg("resolution")=1080, py::arg("wfov")=false,
-            py::arg("binned")=true, py::arg("framerate")=30, py::arg("sensorColor")=true, py::arg("sensorDepth")=true, py::arg("sensorIR")=true)
+        .def(py::init<uint8_t, int, bool, bool, uint8_t, bool, bool, bool, bool>(), py::arg("deviceIndex")=0, py::arg("resolution")=1080, py::arg("wfov")=false,
+            py::arg("binned")=true, py::arg("framerate")=30, py::arg("sensorColor")=true, py::arg("sensorDepth")=true, py::arg("sensorIR")=true, py::arg("imuSensors")=false)
         .def("getFrames", &Kinect::getFrames, "Read frames from Kinect",
-            py::arg("getColor")=true, py::arg("getDepth")=true, py::arg("getIR")=true)
+            py::arg("getColor")=true, py::arg("getDepth")=true, py::arg("getIR")=true, py::arg("getSensors")=false)
+        .def("getSensorData", &Kinect::getSensorData, "Return sensor struct")
         .def("getColorData", &Kinect::getColorData, "Return color frame")
         .def("getDepthData", &Kinect::getDepthData, "Return depth frame",
             py::arg("align")=false)
         .def("getIRData", &Kinect::getIRData, "Return IR frame")
+        .def("getPointCloud", &Kinect::getPointCloud, "Return point cloud")
+        .def("getPointCloudColor", &Kinect::getPointCloudColor, "Return point cloud color values")
+        .def("savePointCloud", &Kinect::savePointCloud, "Save the current pointcloud to a ply file",
+            py::arg("file_name"))
         .def("getDepthCalibration", &Kinect::getDepthCalibration, py::return_value_policy::copy)
         .def("getColorCalibration", &Kinect::getColorCalibration, py::return_value_policy::copy)
         .def("getSerialNumber", &Kinect::getSerialNumber, "Return the serial number of the kinect")

@@ -14,7 +14,7 @@ py::array_t<double> Calibration::getIntrinsicsMatrix(bool extended=false) {
     size_t size = msize*msize;
 
     double *intrinsics = new double[size];
-    for(int i=0; i<size; i++)
+    for(unsigned int i=0; i<size; i++)
         intrinsics[i] = 0;
 
     if(extended) {
@@ -74,7 +74,7 @@ py::array_t<double> Calibration::getDistortionParams() {
 py::array_t<double> Calibration::getRotationMatrix() {
     constexpr size_t size = 3*3;
     double *rot = new double[size];
-    for(int i=0; i<size; i++)
+    for(unsigned int i=0; i<size; i++)
         rot[i] = rotation[i];
 
     // Python object that frees the allocated memory when destroyed
@@ -93,7 +93,7 @@ py::array_t<double> Calibration::getRotationMatrix() {
 py::array_t<double> Calibration::getTranslationVector() {
     constexpr size_t size = 3*1;
     double *t = new double[size];
-    for(int i=0; i<size; i++)
+    for(unsigned int i=0; i<size; i++)
         t[i] = translation[i];
 
     // Python object that frees the allocated memory when destroyed
@@ -112,9 +112,9 @@ py::array_t<double> Calibration::getTranslationVector() {
 py::array_t<double> Calibration::getCameraPose() {
     constexpr size_t size = 4*4;
     double *pose = new double[size];
-    for(int i=0; i<size; i++)
+    for(unsigned int i=0; i<size; i++)
         pose[i] = 0;
-    for(int l=0; l<3; l++) {
+    for(unsigned int l=0; l<3; l++) {
         for(int c=0; c<3; c++)
             pose[l*4 + c] = rotation[l*3 + c];
         pose[l*4 + 3] = translation[l];

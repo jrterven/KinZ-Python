@@ -24,7 +24,7 @@ class get_pybind_include(object):
 ext_modules = [
     Extension(
         'pyk4',
-        ['pybinder.cpp', 'kinect.cpp', 'calibration.cpp'],
+        ['pybinder.cpp', 'kinect.cpp', 'calibration.cpp', 'utils.cpp'],
         include_dirs=[
             # Path to pybind11 headers
             get_pybind_include(),

@@ -14,10 +14,10 @@ import cv2
 import pyk4
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=3072, wfov=True, binned=True, framerate=30)
+kin = pyk4.Kinect(resolution=720, wfov=True, binned=True, framerate=30, imuSensors=True)
 
 # Get depth aligned with color?
-align_frames = True
+align_frames = False
 image_scale = 0.25    # visualized image scale
 
 # initialize fps counter
@@ -30,22 +30,32 @@ while True:
       t = cv2.getTickCount()
 
     # read kinect frames. If frames available return 1
-    if kin.getFrames(getColor=True, getDepth=True, getIR=True):
+    if kin.getFrames(getColor=True, getDepth=True, getIR=True, getSensors=True):
         color_data = kin.getColorData()
         depth_data = kin.getDepthData(align=align_frames)
         ir_data = kin.getIRData()
+        sensor_data = kin.getSensorData()
 
         # extract frames to np arrays
-        depth_image = np.array(depth_data, copy = True)
-        color_image = np.array(color_data, copy = True) # image is BGRA
+        depth_image = np.array(depth_data.buffer, copy = True)
+        color_image = np.array(color_data.buffer, copy = True) # image is BGRA
         color_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR) # to BGR
-        ir_image = np.array(ir_data, copy = True)
+        ir_image = np.array(ir_data.buffer, copy = True)
 
-        print('Depth shape and type:', depth_image.shape, depth_image.dtype)
-        print('Color shape type:', color_image.shape, color_image.dtype)
-        print('IR shape and type:', ir_image.shape, ir_image.dtype)
+        print('Depth shape, type, timestamp:', depth_image.shape, depth_image.dtype, depth_data.timestamp_nsec)
+        print('Color shape, type, timestamp:', color_image.shape, color_image.dtype, color_data.timestamp_nsec)
+        print('IR shape, type, timestamp:', ir_image.shape, ir_image.dtype, ir_data.timestamp_nsec)
         print('Depth range values:', np.amin(depth_image), np.amax(depth_image))
         print('IR range values:', np.amin(ir_image), np.amax(ir_image))
+        print('Temperature: {:.1f} Celsius'.format(sensor_data.temperature))
+        print('AccX, AccY, AccZ, AccTime = {:.3f}, {:.3f}, {:.3f}, {:d}'.format(sensor_data.acc_x,
+                                                                                sensor_data.acc_y,
+                                                                                sensor_data.acc_z,
+                                                                                sensor_data.acc_timestamp_usec))
+        print('GyroX, GyroY, GyroZ. GyroTime = {:.3f}, {:.3f}, {:.3f}, {:d}'.format(sensor_data.gyro_x,
+                                                                                    sensor_data.gyro_y,
+                                                                                    sensor_data.gyro_z,
+                                                                                    sensor_data.gyro_timestamp_usec))
 
         # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)

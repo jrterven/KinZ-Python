@@ -17,8 +17,8 @@
 #include <pybind11/stl.h>
 
 Kinect::Kinect(uint8_t deviceIndex, int resolution, bool wfov, bool binned, uint8_t framerate,
-    bool sensorColor, bool sensorDepth, bool sensorIR) {
-    initialize(deviceIndex, resolution, wfov, binned, framerate, sensorColor, sensorDepth, sensorIR);
+    bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors) {
+    initialize(deviceIndex, resolution, wfov, binned, framerate, sensorColor, sensorDepth, sensorIR, imuSensors);
 }
 
 Kinect::~Kinect()
@@ -51,7 +51,7 @@ Kinect::~Kinect()
 *    3072: 4096 x 3072 @ 12 FPS, Aligned 7 FPS
 */
 int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool binned, uint8_t framerate,
-    bool sensorColor, bool sensorDepth, bool sensorIR) 
+    bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors) 
 {
     // Values initialization
     // Color resolution
@@ -223,6 +223,18 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
                                     K4A_COLOR_CONTROL_MODE_MANUAL, 2)) {
             printf("Failed to change power frequency\n");
     }
+
+    m_imu_sensors_available = false;
+    if(imuSensors) {
+        if(k4a_device_start_imu(m_device) == K4A_RESULT_SUCCEEDED) {
+            printf("IMU sensors started succesfully.");
+            m_imu_sensors_available = true;
+        }
+        else {
+            printf("IMU SENSORES FAILED INITIALIZATION");
+            m_imu_sensors_available = false;
+        }
+    }
     
     return 0;
 } // initialize
@@ -268,7 +280,7 @@ Calibration Kinect::getColorCalibration() {
 }
 
 
-const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR) {
+const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR, bool getSensors) {
     bool goodColor = true, goodDepth = true, goodIR = true;
     if (this->res==0)
         getColor = false;
@@ -335,13 +347,52 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR) {
         }
     }
 
+    if(getSensors && m_imu_sensors_available) {
+        k4a_imu_sample_t imu_sample;
+
+        // Capture a imu sample
+        k4a_wait_result_t imu_status;
+        imu_status = k4a_device_get_imu_sample(m_device, &imu_sample, TIMEOUT_IN_MS);
+        switch (imu_status)
+        {
+        case K4A_WAIT_RESULT_SUCCEEDED:
+            break;
+        case K4A_WAIT_RESULT_TIMEOUT:
+            printf("Timed out waiting for a imu sample\n");
+            break;
+        case K4A_WAIT_RESULT_FAILED:
+            printf("Failed to read a imu sample\n");
+            break;
+        }
+
+        // Access the accelerometer readings
+        if (imu_status == K4A_WAIT_RESULT_SUCCEEDED)
+        {
+            m_imu_data.temperature = imu_sample.temperature;
+            m_imu_data.acc_x = imu_sample.acc_sample.xyz.x;
+            m_imu_data.acc_y = imu_sample.acc_sample.xyz.y;
+            m_imu_data.acc_z = imu_sample.acc_sample.xyz.z;
+            m_imu_data.acc_timestamp_usec = imu_sample.acc_timestamp_usec;
+            m_imu_data.gyro_x = imu_sample.gyro_sample.xyz.x;
+            m_imu_data.gyro_y = imu_sample.gyro_sample.xyz.y;
+            m_imu_data.gyro_z = imu_sample.gyro_sample.xyz.z;
+            m_imu_data.gyro_timestamp_usec = imu_sample.gyro_timestamp_usec;
+        }
+    }
+
     if(goodColor && goodDepth && goodIR)
         return 1;
     else
         return 0;
 } // getFrames
 
-BufferColor Kinect::getColorData() {
+Imu_sample Kinect::getSensorData() {
+    return m_imu_data;
+}
+
+ColorData Kinect::getColorData() {
+    ColorData colorData;
+
     if(m_image_c) {
         int w = k4a_image_get_width_pixels(m_image_c);
         int h = k4a_image_get_height_pixels(m_image_c);
@@ -351,17 +402,22 @@ BufferColor Kinect::getColorData() {
         void* data = malloc(sz);
         memcpy(data, dataBuffer, sz);
         BufferColor m((uint8_t *)data, h, w, stride);
-        //k4a_image_release(m_image_c);
-        //m_image_c = NULL;
-        return m;
+        
+        colorData.buffer = m;
+        colorData.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_c);
+        return colorData;
     }
     else {
         BufferColor m(NULL, 0, 0, 0);
-        return m;
+        colorData.buffer = m;
+        colorData.timestamp_nsec = 0;
+        return colorData;
     }
 }
 
-BufferDepth Kinect::getDepthData(bool align) {
+DepthData Kinect::getDepthData(bool align) {
+    DepthData depthData;
+
     if(m_image_d) {
         // align images
         if(align) {
@@ -384,17 +440,22 @@ BufferDepth Kinect::getDepthData(bool align) {
         void* data = malloc(sz);
         memcpy(data, dataBuffer, sz);
         BufferDepth m((uint16_t *)data, h, w, stride);
-        //k4a_image_release(m_image_d);
-        //m_image_d = NULL;
-        return m;
+
+        depthData.buffer = m;
+        depthData.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_d);
+        return depthData;
     }
     else {
         BufferDepth m(NULL, 0, 0, 0);
-        return m;
+        depthData.buffer = m;
+        depthData.timestamp_nsec = 0;
+        return depthData;
     }
 }
 
-BufferDepth Kinect::getIRData() {
+DepthData Kinect::getIRData() {
+    DepthData irData;
+
     if(m_image_ir) {
         int w = k4a_image_get_width_pixels(m_image_ir);
         int h = k4a_image_get_height_pixels(m_image_ir);
@@ -404,13 +465,16 @@ BufferDepth Kinect::getIRData() {
         void* data = malloc(sz);
         memcpy(data, dataBuffer, sz);
         BufferDepth m((uint16_t *)data, h, w, stride);
-        k4a_image_release(m_image_ir);
-        m_image_ir = NULL;
-        return m;
+        
+        irData.buffer = m;
+        irData.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_ir);
+        return irData;
     }
     else {
         BufferDepth m(NULL, 0, 0, 0);
-        return m;
+        irData.buffer = m;
+        irData.timestamp_nsec = 0;
+        return irData;
     }
 }
 
@@ -426,6 +490,34 @@ bool Kinect::align_depth_to_color(int width, int height, k4a_image_t &transforme
                                                                             m_image_d,
                                                                             transformed_depth_image)) {
         printf("Failed to compute transformed depth image\n");
+        return false;
+    }
+
+    return true;
+}
+
+
+bool Kinect::align_color_to_depth(k4a_image_t &transformed_color_image){
+    int depth_image_width_pixels = k4a_image_get_width_pixels(m_image_d);
+    int depth_image_height_pixels = k4a_image_get_height_pixels(m_image_d);
+    
+    transformed_color_image = NULL;
+    if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_COLOR_BGRA32,
+                                                 depth_image_width_pixels,
+                                                 depth_image_height_pixels,
+                                                 depth_image_width_pixels * 4 * (int)sizeof(uint8_t),
+                                                 &transformed_color_image))
+    {
+        printf("Failed to create transformed color image\n");
+        return false;
+    }
+
+    if (K4A_RESULT_SUCCEEDED != k4a_transformation_color_image_to_depth_camera(m_transformation,
+                                                                              m_image_d,
+                                                                              m_image_c,
+                                                                              transformed_color_image))
+    {
+        printf("Failed to compute transformed color image\n");
         return false;
     }
 
@@ -637,4 +729,126 @@ std::vector<std::vector<int> > Kinect::map_coords_depth_to_3D(
 
     return final_coords;
 }
+
+/** Transforms the depth image into 3 planar images representing X, Y and Z-coordinates of corresponding 3d points.
+* Throws error on failure.
+*
+* \sa k4a_transformation_depth_image_to_point_cloud
+*/
+bool Kinect::depth_image_to_point_cloud(int width, int height, k4a_image_t &xyz_image) {
+    if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM,
+                                                 width, height,
+                                                 width * 3 * (int)sizeof(int16_t),
+                                                 &xyz_image)) {
+        printf("Failed to create transformed xyz image\n");
+        return false;
+    }
+
+    k4a_result_t result =
+        k4a_transformation_depth_image_to_point_cloud(m_transformation,
+                                                      m_image_d,
+                                                      K4A_CALIBRATION_TYPE_DEPTH,
+                                                      xyz_image);
+
+    if (K4A_RESULT_SUCCEEDED != result) {
+        printf("Failed to transform depth image to point cloud!");
+        return false;
+    }
+    return true;
+}
+
+BufferPointCloud Kinect::getPointCloud() {
+    if(m_image_d) {
+        k4a_image_t image_xyz = NULL;
+
+        // Get the point cloud
+        if(depth_image_to_point_cloud(k4a_image_get_width_pixels(m_image_d),
+            k4a_image_get_height_pixels(m_image_d), image_xyz)) {
+
+            int w = k4a_image_get_width_pixels(image_xyz);
+            int h = k4a_image_get_height_pixels(image_xyz);
+            int stride = k4a_image_get_stride_bytes(image_xyz);
+            int16_t *dataBuffer = (int16_t *)(void *)k4a_image_get_buffer(image_xyz);
+
+            //uint8_t* dataBuffer = k4a_image_get_buffer(image_xyz);
+            auto sz = k4a_image_get_size(image_xyz);
+            void* data = malloc(sz);
+            memcpy(data, dataBuffer, sz);
+            BufferPointCloud m((int16_t *)data, h, w, stride);
+
+            return m;
+        }
+        else {
+            printf("Failed to create PointCloud\n");
+            BufferPointCloud m(NULL, 0, 0, 0);
+            return m;
+        }
+    }
+    else {
+        BufferPointCloud m(NULL, 0, 0, 0);
+        return m;
+    }
+}
+
+BufferColor Kinect::getPointCloudColor() {
+    if(m_image_d) {
+        k4a_image_t transformed_color_image = NULL;
+
+        // Get the color image aligned with depth coordinates
+        // in transformed_color_image
+        if(align_color_to_depth(transformed_color_image)) {
+
+            int w = k4a_image_get_width_pixels(transformed_color_image);
+            int h = k4a_image_get_height_pixels(transformed_color_image);
+            int stride = k4a_image_get_stride_bytes(transformed_color_image);
+            uint8_t* dataBuffer = k4a_image_get_buffer(transformed_color_image);
+            auto sz = k4a_image_get_size(transformed_color_image);
+            void* data = malloc(sz);
+            memcpy(data, dataBuffer, sz);
+            BufferColor m((uint8_t *)data, h, w, stride);
+            k4a_image_release(transformed_color_image);
+            return m;
+        }
+        else {
+            BufferColor m(NULL, 0, 0, 0);
+            return m;
+        }
+    }
+    else {
+        BufferColor m(NULL, 0, 0, 0);
+        return m;
+    }
+}
+
+void Kinect::savePointCloud(const char *file_name) {
+    if(m_image_d) {
+        k4a_image_t image_xyz = NULL;
+        k4a_image_t transformed_color_image = NULL;
+
+        // Get the color image aligned with depth coordinates
+        // in transformed_color_image
+        if(align_color_to_depth(transformed_color_image)) {
+
+            // Get the point cloud
+            if(depth_image_to_point_cloud(k4a_image_get_width_pixels(m_image_d),
+                k4a_image_get_height_pixels(m_image_d), image_xyz)) {
+
+                write_point_cloud(image_xyz,
+                                  transformed_color_image,
+                                  file_name);
+            }
+            else {
+                printf("Failed to create PointCloud\n");
+            }
+        }
+        else {
+            printf("Failed to get the color image aligned with depth for PointCloud\n");
+        }
+    }
+    else {
+        printf("No depth image available for generating Pointcloud\n");
+    }
+}
+
+
 

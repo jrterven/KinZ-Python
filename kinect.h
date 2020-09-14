@@ -40,6 +40,10 @@ private:
     k4a_image_t m_image_d = nullptr;
     k4a_image_t m_image_ir = nullptr;
 
+    // Sensor data
+    Imu_sample m_imu_data;
+    bool m_imu_sensors_available;
+
     // calibration and transformation object
     k4a_calibration_t m_calibration;
     Calibration m_depth_calib;
@@ -47,22 +51,29 @@ private:
     k4a_transformation_t m_transformation = NULL;
 
     int initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool binned, 
-        uint8_t framerate, bool sensorColor, bool sensorDepth, bool sensorIR);
+        uint8_t framerate, bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors);
     bool align_depth_to_color(int width, int height,
                         k4a_image_t &transformed_depth_image);
+    bool align_color_to_depth(k4a_image_t &transformed_color_image);
     void updateCalibration(Calibration&, bool);
+    bool depth_image_to_point_cloud(int width, int height, k4a_image_t &xyz_image);
     std::string serial_number;
 
 public:
-    Kinect(uint8_t deviceIndex = 0, int resolution = 1080, bool wfov = false, bool binned = true, 
-        uint8_t framerate = 30, bool sensorColor = true, bool sensorDepth = true, bool sensorIR = true);
+    Kinect(uint8_t deviceIndex = 0, int resolution = 1080, bool wfov = false,
+           bool binned = true, uint8_t framerate = 30, bool sensorColor = true,
+           bool sensorDepth = true, bool sensorIR = true, bool imuSensors = false);
     ~Kinect();
 
     void close();
-    const int getFrames(bool getColor = true, bool getDepth = true, bool getIR = true);
-    BufferColor getColorData();
-    BufferDepth getDepthData(bool align=false);
-    BufferDepth getIRData();
+    const int getFrames(bool getColor = true, bool getDepth = true, bool getIR = true, bool getSensors = false);
+    Imu_sample getSensorData();
+    ColorData getColorData();
+    DepthData getDepthData(bool align=false);
+    DepthData getIRData();
+    BufferPointCloud getPointCloud();
+    BufferColor getPointCloudColor();
+    void savePointCloud(const char *file_name);
     Calibration getDepthCalibration();
     Calibration getColorCalibration();
     std::string getSerialNumber();
