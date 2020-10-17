@@ -32,6 +32,18 @@ PYBIND11_MODULE(pyk4, m) {
         );
     });
 
+    py::class_<BufferBodyIndex>(m, "BufferBodyIndex", py::buffer_protocol())
+   .def_buffer([](BufferBodyIndex &m) -> py::buffer_info {
+        return py::buffer_info(
+            m.data(),                              
+            sizeof(uint8_t),                         
+            py::format_descriptor<uint8_t>::format(),
+            2,                                     
+            { m.rows(), m.cols()},                
+            { m.stride(), sizeof(uint8_t) }
+        );
+    });
+
     py::class_<BufferPointCloud>(m, "BufferPointCloud", py::buffer_protocol())
    .def_buffer([](BufferPointCloud &m) -> py::buffer_info {
         return py::buffer_info(
@@ -84,12 +96,23 @@ PYBIND11_MODULE(pyk4, m) {
         .def_readonly("buffer", &DepthData::buffer)
         .def_readonly("timestamp_nsec", &DepthData::timestamp_nsec);
 
+    py::class_<BodyIndexData>(m, "BodyIndexData")
+        .def(py::init())
+        .def_readonly("buffer", &BodyIndexData::buffer)
+        .def_readonly("timestamp_nsec", &BodyIndexData::timestamp_nsec);
+
 
     py::class_<Kinect>(m, "Kinect")
-        .def(py::init<uint8_t, int, bool, bool, uint8_t, bool, bool, bool, bool>(), py::arg("deviceIndex")=0, py::arg("resolution")=1080, py::arg("wfov")=false,
-            py::arg("binned")=true, py::arg("framerate")=30, py::arg("sensorColor")=true, py::arg("sensorDepth")=true, py::arg("sensorIR")=true, py::arg("imuSensors")=false)
+        .def(py::init<uint8_t, int, bool, bool, uint8_t, bool, bool, bool, bool, bool, bool>(),
+             py::arg("deviceIndex")=0, py::arg("resolution")=1080, py::arg("wfov")=false,
+             py::arg("binned")=true, py::arg("framerate")=30, py::arg("sensorColor")=true,
+             py::arg("sensorDepth")=true, py::arg("sensorIR")=true,
+             py::arg("imuSensors")=false, py::arg("bodyTracking")=false,
+             py::arg("bodyIndex")=false)
         .def("getFrames", &Kinect::getFrames, "Read frames from Kinect",
-            py::arg("getColor")=true, py::arg("getDepth")=true, py::arg("getIR")=true, py::arg("getSensors")=false)
+            py::arg("getColor")=true, py::arg("getDepth")=true,
+            py::arg("getIR")=true, py::arg("getSensors")=false,
+            py::arg("getBody")=false, py::arg("getBodyIndex")=false)
         .def("getSensorData", &Kinect::getSensorData, "Return sensor struct")
         .def("getColorData", &Kinect::getColorData, "Return color frame")
         .def("getDepthData", &Kinect::getDepthData, "Return depth frame",
@@ -117,5 +140,9 @@ PYBIND11_MODULE(pyk4, m) {
             "Map depth pixel coordinates to color image space")
         .def("map_coords_depth_to_3D", &Kinect::map_coords_depth_to_3D,
             "Map depth pixel coordinates to 3D space of depth camera",
-            py::arg("depth_coords"));
+            py::arg("depth_coords"))
+        .def("getNumBodies", &Kinect::getNumBodies, "Get number of bodies found")
+        .def("getBodies", &Kinect::getBodies, "Get bodies list")
+        .def("getBodyIndexMap", &Kinect::getBodyIndexMap, "Return body index map frame",
+            py::arg("returnId")=false);
 }

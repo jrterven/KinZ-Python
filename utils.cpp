@@ -58,6 +58,31 @@ size_t BufferColor::stride() const {
     return m_stride; 
 }
 
+BufferBodyIndex::BufferBodyIndex() {
+    m_data = NULL;
+    m_rows = 0;
+    m_cols = 0;
+    m_stride = 0;
+}
+
+BufferBodyIndex::BufferBodyIndex(uint8_t* data, size_t rows, size_t cols, size_t stride) : 
+    m_data(data), m_rows(rows), m_cols(cols), m_stride(stride) {
+}
+
+BufferBodyIndex::~BufferBodyIndex(){}
+uint8_t* BufferBodyIndex::data() {
+    return m_data.get(); 
+}
+size_t BufferBodyIndex::rows() const {
+    return m_rows; 
+}
+size_t BufferBodyIndex::cols() const { 
+    return m_cols; 
+}
+size_t BufferBodyIndex::stride() const { 
+    return m_stride; 
+}
+
 BufferPointCloud::BufferPointCloud(int16_t* data, size_t rows, size_t cols, size_t stride) : 
     m_data(data), m_rows(rows), m_cols(cols), m_stride(stride) {
 }

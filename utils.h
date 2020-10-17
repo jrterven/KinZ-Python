@@ -34,6 +34,20 @@ private:
     size_t m_rows, m_cols, m_stride;
 };
 
+class BufferBodyIndex {
+public:
+    BufferBodyIndex();
+    BufferBodyIndex(uint8_t* data, size_t rows, size_t cols, size_t stride);
+    ~BufferBodyIndex();
+    uint8_t *data();
+    size_t rows() const;
+    size_t cols() const;
+    size_t stride() const;
+private:
+    std::shared_ptr<uint8_t> m_data;
+    size_t m_rows, m_cols, m_stride;
+};
+
 class BufferPointCloud {
 public:
     BufferPointCloud(int16_t* data, size_t rows, size_t cols, size_t stride);
@@ -54,6 +68,11 @@ struct ColorData {
 
 struct DepthData {
     BufferDepth buffer;
+    uint64_t timestamp_nsec;
+};
+
+struct BodyIndexData {
+    BufferBodyIndex buffer;
     uint64_t timestamp_nsec;
 };
 

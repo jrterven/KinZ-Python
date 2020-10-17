@@ -70,7 +70,7 @@ class BuildExt(build_ext):
     }
     l_opts = {
         'msvc': [],
-        'unix': ['-l:libk4a.so.1.3'],
+        'unix': ['-l:libk4a.so', '-l:libk4abt.so'],
     }
 
     if sys.platform == 'darwin':

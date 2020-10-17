@@ -16,29 +16,18 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-Kinect::Kinect(uint8_t deviceIndex, int resolution, bool wfov, bool binned, uint8_t framerate,
-    bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors) {
-    initialize(deviceIndex, resolution, wfov, binned, framerate, sensorColor, sensorDepth, sensorIR, imuSensors);
+Kinect::Kinect(uint8_t deviceIndex, int resolution, bool wfov, bool binned,
+               uint8_t framerate, bool sensorColor, bool sensorDepth,
+               bool sensorIR, bool imuSensors, bool bodyTracking,
+               bool bodyIndex) {
+    initialize(deviceIndex, resolution, wfov, binned, framerate,
+               sensorColor, sensorDepth, sensorIR, imuSensors,
+               bodyTracking, bodyIndex);
 }
 
 Kinect::~Kinect()
 {
-    if (m_device != NULL) {
-        k4a_device_close(m_device);
-        m_device = NULL;
-    }
-    if (m_image_c != NULL) {
-        k4a_image_release(m_image_c);
-        m_image_c = NULL;
-    }
-    if (m_image_d != NULL) {
-        k4a_image_release(m_image_d);
-        m_image_d = NULL;
-    }
-    if (m_capture != NULL) {
-        k4a_capture_release(m_capture);
-        m_capture = NULL;
-    }
+    close();
 }
 
 /**
@@ -51,7 +40,8 @@ Kinect::~Kinect()
 *    3072: 4096 x 3072 @ 12 FPS, Aligned 7 FPS
 */
 int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool binned, uint8_t framerate,
-    bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors) 
+    bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors, bool bodyTracking,
+    bool bodyIndex) 
 {
     // Values initialization
     // Color resolution
@@ -132,9 +122,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
                 m_config.color_resolution = K4A_COLOR_RESOLUTION_1080P;
                 break;
         }
-        
     }
-
 
     // Configure Depth sensor
     if (!sensorIR && !sensorDepth) 
@@ -224,17 +212,34 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
             printf("Failed to change power frequency\n");
     }
 
+    // Start IMU sensors
     m_imu_sensors_available = false;
     if(imuSensors) {
         if(k4a_device_start_imu(m_device) == K4A_RESULT_SUCCEEDED) {
-            printf("IMU sensors started succesfully.");
+            printf("IMU sensors started succesfully.\n");
             m_imu_sensors_available = true;
         }
         else {
-            printf("IMU SENSORES FAILED INITIALIZATION");
+            printf("IMU SENSORES FAILED INITIALIZATION!\n");
             m_imu_sensors_available = false;
         }
     }
+
+    // Start tracker
+    m_body_tracking_available = false;
+    m_num_bodies = 0;
+    if (bodyTracking || bodyIndex) {
+        k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
+        if(k4abt_tracker_create(&m_calibration, tracker_config, &m_tracker) == K4A_RESULT_SUCCEEDED) {
+            printf("Body tracking started succesfully.\n");
+            m_body_tracking_available = true;
+        }
+        else {
+            printf("BODY TRACKING FAILED TO INITIALIZE!\n");
+            m_body_tracking_available = false;
+        }
+    }
+
     
     return 0;
 } // initialize
@@ -280,7 +285,8 @@ Calibration Kinect::getColorCalibration() {
 }
 
 
-const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR, bool getSensors) {
+const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
+                            bool getSensors, bool getBody, bool getBodyIndex) {
     bool goodColor = true, goodDepth = true, goodIR = true;
     if (this->res==0)
         getColor = false;
@@ -301,6 +307,14 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR, bool getSe
     if (m_image_ir) {
         k4a_image_release(m_image_ir);
         m_image_ir = NULL;
+    }
+    if (m_body_index) {
+        k4a_image_release(m_body_index);
+        m_body_index = NULL;
+    }
+    if (m_body_frame) {
+        k4abt_frame_release(m_body_frame);
+        m_body_frame = NULL;
     }
 
     // Get a m_capture
@@ -379,6 +393,59 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR, bool getSe
             m_imu_data.gyro_timestamp_usec = imu_sample.gyro_timestamp_usec;
         }
     }
+
+    if (getBody && m_body_tracking_available) {
+        // Get body tracking data
+        k4a_wait_result_t queue_capture_result = k4abt_tracker_enqueue_capture(m_tracker, m_capture, K4A_WAIT_INFINITE);
+        if (queue_capture_result == K4A_WAIT_RESULT_TIMEOUT) {
+            // It should never hit timeout when K4A_WAIT_INFINITE is set.
+            printf("Error! Add capture to tracker process queue timeout!\n");
+        }
+        else if (queue_capture_result == K4A_WAIT_RESULT_FAILED) {
+            printf("Error! Add capture to tracker process queue failed!\n");
+        }
+        else {
+            m_body_frame = NULL;
+            k4a_wait_result_t pop_frame_result = k4abt_tracker_pop_result(m_tracker, &m_body_frame, K4A_WAIT_INFINITE);
+            if (pop_frame_result == K4A_WAIT_RESULT_SUCCEEDED) {
+                m_num_bodies = k4abt_frame_get_num_bodies(m_body_frame);
+                py::list bodies;
+                
+                for (uint32_t i = 0; i < m_num_bodies; i++) {
+                    k4abt_body_t body;
+                    if (k4abt_frame_get_body_skeleton(m_body_frame, i, &body.skeleton) == K4A_RESULT_SUCCEEDED) {
+                        body.id = k4abt_frame_get_body_id(m_body_frame, i);
+
+                        py::dict body_dict;
+                        body_dict = get_body_data(body);
+                        bodies.append(body_dict);
+                    }
+                    else {
+                        printf("Get body from body frame failed!");
+                    }
+                }
+                m_bodies = bodies;
+
+                if(getBodyIndex) {
+                    m_body_index = k4abt_frame_get_body_index_map(m_body_frame);
+
+                    if (m_body_index == NULL) {
+                        printf("Error: Fail to generate bodyindex map!\n");
+                    }
+                }
+            }
+            else if (pop_frame_result == K4A_WAIT_RESULT_TIMEOUT)
+            {
+                //  It should never hit timeout when K4A_WAIT_INFINITE is set.
+                printf("Error! Pop body frame result timeout!\n");
+            }
+            else
+            {
+                printf("Pop body frame result failed!\n");
+            }
+        }
+    }
+    
 
     if(goodColor && goodDepth && goodIR)
         return 1;
@@ -530,9 +597,39 @@ std::string Kinect::getSerialNumber()
 }
 
 void Kinect::close(){
-    if (m_device) {
+    if (m_tracker != NULL) {
+        k4abt_tracker_shutdown(m_tracker);
+        k4abt_tracker_destroy(m_tracker);
+        m_tracker = NULL;
+    }
+    if (m_device != NULL) {
+        k4a_device_stop_cameras(m_device);
         k4a_device_close(m_device);
         m_device = NULL;
+    }
+    if (m_image_c != NULL) {
+        k4a_image_release(m_image_c);
+        m_image_c = NULL;
+    }
+    if (m_image_d != NULL) {
+        k4a_image_release(m_image_d);
+        m_image_d = NULL;
+    }
+    if (m_image_ir) {
+        k4a_image_release(m_image_ir);
+        m_image_ir = NULL;
+    }
+    if (m_body_index) {
+        k4a_image_release(m_body_index);
+        m_body_index = NULL;
+    }
+    if (m_body_frame) {
+        k4abt_frame_release(m_body_frame);
+        m_body_frame = NULL;
+    }
+    if (m_capture != NULL) {
+        k4a_capture_release(m_capture);
+        m_capture = NULL;
     }
 }
 
@@ -850,5 +947,132 @@ void Kinect::savePointCloud(const char *file_name) {
     }
 }
 
+int Kinect::getNumBodies() {
+    return m_num_bodies;
+}
+
+py::list Kinect::getBodies() {
+    return m_bodies;
+}
+
+py::dict Kinect::get_body_data(k4abt_body_t body) {
+    py::dict body_data;
+
+    // Initialize String Array 
+    const char *squeleton[(int)K4ABT_JOINT_COUNT] = { "Pelvis", "Spine_navel", "Spine_chest", 
+                                 "Neck", "Clavicle_left", "Shoulder_left",
+                                 "Elbow_left", "Wrist_left", "Hand_left",
+                                 "Handtip_left", "Thumb_left", "Clavicle_right",
+                                 "Shoulder_right", "Elbow_right", "Wrist_right",
+                                 "Hand_right", "Handtip_right", "Thumb_right",
+                                 "Hip_left", "Knee_left", "Ankle_left",
+                                 "Foot_left", "Hip_right", "Knee_right",
+                                 "Ankle_right", "Foot_right", "Head",
+                                 "Nose", "Eye_left", "Ear_left",
+                                 "Eye_right", "Ear_right" }; 
+
+    const char *confidence_vals[4] = {"None", "Low", "Medium", "High"};
+    
+    body_data[py::str("id")] = body.id;
+
+    
+    for (int i = 0; i < (int)K4ABT_JOINT_COUNT; i++) {
+        k4a_float3_t position = body.skeleton.joints[i].position;
+        k4a_quaternion_t orientation = body.skeleton.joints[i].orientation;
+        k4abt_joint_confidence_level_t confidence_level = body.skeleton.joints[i].confidence_level;
+
+        py::dict position3d_dict;
+        position3d_dict[py::str("x")] = position.v[0];
+        position3d_dict[py::str("y")] = position.v[1];
+        position3d_dict[py::str("z")] = position.v[2];
+
+        py::dict orientation_dict;
+        orientation_dict[py::str("w")] = orientation.v[0];
+        orientation_dict[py::str("x")] = orientation.v[1];
+        orientation_dict[py::str("y")] = orientation.v[2];
+        orientation_dict[py::str("z")] = orientation.v[3];
+
+        // project the 3D coordinates to the color and depth cameras
+        k4a_float2_t color_coords, depth_coords;
+        int val;
+        py::dict position2d_color_dict;
+        if (k4a_calibration_3d_to_2d(&m_calibration, &position, 
+                                       K4A_CALIBRATION_TYPE_DEPTH, K4A_CALIBRATION_TYPE_COLOR,
+                                       &color_coords, &val) == K4A_RESULT_SUCCEEDED) {
+            position2d_color_dict[py::str("x")] = (int)color_coords.xy.x;
+            position2d_color_dict[py::str("y")] = (int)color_coords.xy.y;
+        }
+        else {
+            position2d_color_dict[py::str("x")] = -1;
+            position2d_color_dict[py::str("y")] = -1;
+        }
+
+        py::dict position2d_depth_dict;
+        if (k4a_calibration_3d_to_2d(&m_calibration, &position, 
+                                       K4A_CALIBRATION_TYPE_DEPTH, K4A_CALIBRATION_TYPE_DEPTH,
+                                       &depth_coords, &val) == K4A_RESULT_SUCCEEDED) {
+            position2d_depth_dict[py::str("x")] = (int)depth_coords.xy.x;
+            position2d_depth_dict[py::str("y")] = (int)depth_coords.xy.y;
+        }
+        else {
+            position2d_depth_dict[py::str("x")] = -1;
+            position2d_depth_dict[py::str("y")] = -1;
+        }
+
+        py::dict data;
+        data[py::str("position3d")] = position3d_dict;
+        data[py::str("position2d-rgb")] = position2d_color_dict;
+        data[py::str("position2d-depth")] = position2d_depth_dict;
+        data[py::str("orientation")] = orientation_dict;
+        data[py::str("confidence")] = (int)confidence_level;
+
+        body_data[py::str(squeleton[i])] = data;
+
+        //printf("Joint[%d]: Position[mm] ( %f, %f, %f ); Orientation ( %f, %f, %f, %f); Confidence Level (%d) \n",
+        //    i, position.v[0], position.v[1], position.v[2], orientation.v[0], orientation.v[1], orientation.v[2], orientation.v[3], confidence_level);
+    }
+
+    return body_data;
+}
+
+BodyIndexData Kinect::getBodyIndexMap(bool returnId) {
+    BodyIndexData bodyIndexMap;
+
+    if(m_body_index) {
+        int w = k4a_image_get_width_pixels(m_body_index);
+        int h = k4a_image_get_height_pixels(m_body_index);
+        int stride = k4a_image_get_stride_bytes(m_body_index);
+        uint8_t* dataBuffer = k4a_image_get_buffer(m_body_index);
+        
+        if (returnId)
+            changeBodyIndexToBodyId(dataBuffer, w, h);
+
+        auto sz = k4a_image_get_size(m_body_index);
+        void* data = malloc(sz);
+        memcpy(data, dataBuffer, sz);
+        BufferBodyIndex m((uint8_t *)data, h, w, stride);
+        
+        bodyIndexMap.buffer = m;
+        bodyIndexMap.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_body_index);
+        return bodyIndexMap;
+    }
+    else {
+        BufferBodyIndex m(NULL, 0, 0, 0);
+        bodyIndexMap.buffer = m;
+        bodyIndexMap.timestamp_nsec = 0;
+        return bodyIndexMap;
+    }
+}
+
+
+void Kinect::changeBodyIndexToBodyId(uint8_t* image_data, int width, int height) {
+    for(int i=0; i < width*height; i++) {
+        uint8_t index = *image_data;
+
+        uint32_t body_id = k4abt_frame_get_body_id	(m_body_frame, (uint32_t)index);
+        *image_data = (uint8_t)body_id;
+        image_data++;
+    }
+}
 
 
