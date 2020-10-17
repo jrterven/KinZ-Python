@@ -4,7 +4,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pyk4, m) {
+PYBIND11_MODULE(kinz, m) {
     
     py::class_<BufferDepth>(m, "BufferDepth", py::buffer_protocol())
    .def_buffer([](BufferDepth &m) -> py::buffer_info {

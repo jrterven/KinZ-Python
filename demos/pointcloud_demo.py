@@ -7,14 +7,14 @@
 from datetime import datetime
 import numpy as np 
 import os
-import pyk4
+import kinz
 import open3d as o3d
 
 # Output directory to save the pointcloud
 POINTCLOUD_OUTPUT_DIR = "."
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True, framerate=30)
+kin = kinz.Kinect(resolution=1080, wfov=True, binned=True, framerate=30)
 
 try:
     count = 0

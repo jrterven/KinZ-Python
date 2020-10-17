@@ -5,10 +5,10 @@
 """
 import numpy as np 
 import cv2
-import pyk4
+import kinz
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True)
+kin = kinz.Kinect(resolution=1080, wfov=True, binned=True)
 
 # get calibration objects
 depth_calib = kin.getDepthCalibration()

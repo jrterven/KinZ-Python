@@ -11,10 +11,10 @@
 """
 import numpy as np 
 import cv2
-import pyk4
+import kinz
 
 # Create Kinect object and initialize
-kin = pyk4.Kinect(resolution=720, wfov=True, binned=True, framerate=30, imuSensors=True)
+kin = kinz.Kinect(resolution=720, wfov=True, binned=True, framerate=30, imuSensors=True)
 
 # Get depth aligned with color?
 align_frames = False

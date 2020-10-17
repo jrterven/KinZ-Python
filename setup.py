@@ -1,12 +1,12 @@
 """
-    Installs pyk4 library
+    Installs KinZ library
 """
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
 
-__version__ = '0.1'
+__version__ = '1.0'
 
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
@@ -23,7 +23,7 @@ class get_pybind_include(object):
 
 ext_modules = [
     Extension(
-        'pyk4',
+        'kinz',
         ['pybinder.cpp', 'kinect.cpp', 'calibration.cpp', 'utils.cpp'],
         include_dirs=[
             # Path to pybind11 headers
@@ -98,7 +98,7 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 setup(
-    name='pyk4',
+    name='kinz',
     version=__version__,
     author='Juan Terven',
     author_email='juan@aifi.io',

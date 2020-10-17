@@ -1,98 +1,85 @@
-"""
-  Kinect for Azure Color, Depth and Infrared streaming in Python
-
-  Supported resolutions:
-  720:  1280 x 720 @ 30 FPS  binned depth
-  1080: 1920 x 1080 @ 30 FPS binned depth
-  1440: 2560 x 1440 @ 30 FPS binned depth
-  1535: 2048 x 1536 @ 30 FPS binned depth
-  2160: 3840 x 2160 @ 30 FPS binned depth
-  3072: 4096 x 3072 @ 15 FPS binned depth
-"""
 import numpy as np 
-import cv2
-import kinz
+import cv2 as cv
 import cmapy
+import kinz
 
 
 def main():
     # Create Kinect object and initialize
-    kin = kinz.Kinect(resolution=720, wfov=False, binned=True, framerate=30,
-                    imuSensors=False, bodyTracking=True)
-
-    # Get depth aligned with color?
-    align_frames = False
-    image_scale = 0.5    # visualized image scale
-
-    # initialize fps counter
-    t = cv2.getTickCount()
-    fps_count = 0
-    fps = 0
+    kin = kinz.Kinect(resolution=720, wfov=True, binned=True,
+                    framerate=30, imuSensors=True,
+                    bodyTracking=True)
 
     while True:
-        if fps_count==0:
-            t = cv2.getTickCount()
-
-        # read kinect frames. If frames available return 1
-        if kin.getFrames(getColor=True, getDepth=True, getIR=False,
-                        getSensors=False, getBody=True, getBodyIndex=True):
+        # Capture kinect frames
+        if kin.getFrames(getColor=True, getDepth=True,
+                        getIR=True, getSensors=True,
+                        getBody=True, getBodyIndex=True):
+            # Read cameras data
             color_data = kin.getColorData()
-            depth_data = kin.getDepthData(align=align_frames)
+            depth_data = kin.getDepthData(align=False)
+            ir_data = kin.getIRData()
+            
+            # Read sensor data
+            sensor_data = kin.getSensorData()
             num_bodies = kin.getNumBodies()
+            
+            # Read body tracking data
             bodies = kin.getBodies()
             body_index_data = kin.getBodyIndexMap(returnId=True)
 
-            print("{:d} bodies detected.".format(num_bodies))
-            print("bodies:", bodies)
+            # Read pointcloud data
+            pointcloud_data = kin.getPointCloud()
+            pointcloudcolor_data = kin.getPointCloudColor()
 
-            # extract frames to np arrays
-            depth_image = np.array(depth_data.buffer, copy=True)
-            color_image = np.array(color_data.buffer, copy=True) # image is BGRA
-            color_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR) # to BGR
-            body_index_image = np.array(body_index_data.buffer, copy=True)
+            # Copy pointcloud data to numpy arrays
+            pointcloud_np = np.array(pointcloud_data)
+            pointcloudcolor_np = np.array(pointcloudcolor_data)
 
-            # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
-            # Apply colormap on body index image
-            body_index_image = cv2.applyColorMap(body_index_image*10, cmapy.cmap('tab20'))
+            # Copy images data to np arrays
+            depth_image = np.array(depth_data.buffer)
+            color_image = np.array(color_data.buffer)
+            ir_image = np.array(ir_data.buffer)
+            body_index_image = np.array(body_index_data.buffer)
 
             # Draw bodies on the RGB image
             draw_keypoints(color_image, bodies, img_type='rgb')
 
             # Draw bodies on the depth image
+            depth_colormap = cv.applyColorMap(cv.convertScaleAbs(
+                                            depth_image,
+                                            alpha=0.03),
+                                            cv.COLORMAP_JET)
             draw_keypoints(depth_colormap, bodies, img_type='depth')
 
-            # Resize images
-            if align_frames:
-                depth_colormap = cv2.resize(depth_colormap, None, fx=image_scale, fy=image_scale)
-                body_index_image = cv2.resize(body_index_image, None, fx=image_scale, fy=image_scale)
+            # Display sensor data
+            print(f"Temp: {sensor_data.temperature:.1f} Celsius")
+            print(f"AccX:{sensor_data.acc_x:.2f}")
+            print(f"AccY:{sensor_data.acc_y:.2f}")
+            print(f"AccZ:{sensor_data.acc_z:.2f}")
+            print(f"AccT:{sensor_data.acc_timestamp_usec:.2f}")
+            print(f"GyroX:{sensor_data.gyro_x:.2f}")
+            print(f"GyroY:{sensor_data.gyro_y:.2f}")
+            print(f"GyroZ:{sensor_data.gyro_z:.2f}")
+            print(f"GyroT:{sensor_data.gyro_timestamp_usec:.2f}")
 
-            color_small = cv2.resize(color_image, None, fx=image_scale, fy=image_scale)
-            size = color_small.shape[0:2]
-            cv2.putText(color_small, "{0:.2f}-FPS".format(fps), (20, size[0]-20), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
+            # Display images
+            color_image = cv.cvtColor(color_image,
+                                    cv.COLOR_BGRA2BGR)
+            body_index_image = cv.applyColorMap(body_index_image*10,
+                                        cmapy.cmap('tab20'))
+            cv.imshow('Color', color_image)
+            cv.imshow('Depth', depth_colormap)
+            cv.imshow('IR', ir_image)
+            cv.imshow('Body index', body_index_image)
 
-            cv2.imshow('Depth', depth_colormap)
-            cv2.imshow('Color', color_small)
-            cv2.imshow('Body index', body_index_image)
-
-        k = cv2.waitKey(1) & 0xFF
+        # Exit with ESC
+        k = cv.waitKey(1) & 0xFF
         if k == 27:
             break
-        elif k == ord('s'):
-            cv2.imwrite("color.jpg", color_image)
-            print("Image saved")
-
-        # increment frame counter and calculate FPS
-        fps_count = fps_count + 1
-        if (fps_count == 30):
-            t = (cv2.getTickCount() - t)/cv2.getTickFrequency()
-            fps = 30.0/t
-            fps_count = 0
 
     kin.close()  # close Kinect
-    cv2.destroyAllWindows()
-
+    cv.destroyAllWindows()
 
 def draw_keypoints(img, bodies, img_type='rgb', size=5):
     colors = [
@@ -146,7 +133,7 @@ def draw_keypoints(img, bodies, img_type='rgb', size=5):
             if confidence > 1:
                 x = body[part][p_type]['x']
                 y = body[part][p_type]['y']
-                cv2.circle(img, (x, y), size, color, -1)
+                cv.circle(img, (x, y), size, color, -1)
 
         # Now draw the body limbs
         for limb in body_limbs:
@@ -156,8 +143,7 @@ def draw_keypoints(img, bodies, img_type='rgb', size=5):
             if conf1 >1  and conf2 > 1 :
                 xy1 = (body[limb[0]][p_type]['x'],body[limb[0]][p_type]['y'])
                 xy2 = (body[limb[1]][p_type]['x'],body[limb[1]][p_type]['y'])
-                cv2.line(img, xy1, xy2, color, size-1)
-
+                cv.line(img, xy1, xy2, color, size-1)
 
 if __name__ == "__main__":
     main()

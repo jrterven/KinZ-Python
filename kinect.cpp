@@ -446,7 +446,6 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
         }
     }
     
-
     if(goodColor && goodDepth && goodIR)
         return 1;
     else

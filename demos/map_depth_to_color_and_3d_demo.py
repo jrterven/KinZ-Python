@@ -7,7 +7,7 @@
 """
 import numpy as np 
 import cv2
-import pyk4
+import kinz
 
 depth_points = []
 
@@ -19,7 +19,7 @@ def mouse_event(event, x, y, flags, param):
 def main():
     global depth_points
     # Create Kinect object and initialize
-    kin = pyk4.Kinect(resolution=1080, wfov=True, binned=True)
+    kin = kinz.Kinect(resolution=1080, wfov=True, binned=True)
     
     depth_window_name = 'Click on the Depth image'
     color_window_name = 'Mapped coordinates in Color'
@@ -35,8 +35,8 @@ def main():
             color_data = kin.getColorData()
             depth_data = kin.getDepthData(align=False)
 
-            depth_image = np.array(depth_data, copy = True)
-            color_image = np.array(color_data, copy = True)
+            depth_image = np.array(depth_data.buffer, copy = True)
+            color_image = np.array(color_data.buffer, copy = True)
             color_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR)
 
             # Project depth image points to color image points
