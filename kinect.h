@@ -60,52 +60,52 @@ private:
     Calibration m_color_calib;
     k4a_transformation_t m_transformation = NULL;
 
-    int initialize(uint8_t deviceIndex, int resolution, bool wideFOV,
-                   bool binned, uint8_t framerate, bool sensorColor,
-                   bool sensorDepth, bool sensorIR, bool imuSensors,
-                   bool bodyTracking, bool bodyIndex);
+    int initialize(uint8_t deviceIndex, int resolution, bool wfov,
+                   bool binned, uint8_t framerate, bool sensor_color,
+                   bool sensor_depth, bool sensor_ir, bool imu_sensors,
+                   bool body_tracking, bool body_index);
     bool align_depth_to_color(int width, int height,
                         k4a_image_t &transformed_depth_image);
     bool align_color_to_depth(k4a_image_t &transformed_color_image);
-    void updateCalibration(Calibration&, bool);
+    void update_calibration(Calibration&, bool);
     bool depth_image_to_point_cloud(int width, int height, k4a_image_t &xyz_image);
     py::dict get_body_data(k4abt_body_t body);
-    void changeBodyIndexToBodyId(uint8_t* image_data, int width, int height);
+    void change_body_index_to_body_id(uint8_t* image_data, int width, int height);
 
 public:
     Kinect(uint8_t deviceIndex = 0, int resolution = 1080, bool wfov = false,
-           bool binned = true, uint8_t framerate = 30, bool sensorColor = true,
-           bool sensorDepth = true, bool sensorIR = true,
-           bool imuSensors = false, bool bodyTracking = false,
-           bool bodyIndex = false);
+           bool binned = true, uint8_t framerate = 30, bool sensor_color = true,
+           bool sensor_depth = true, bool sensor_ir = true,
+           bool imu_sensors = false, bool body_tracking = false,
+           bool body_index = false);
     ~Kinect();
 
     void close();
-    const int getFrames(bool getColor = true, bool getDepth = true, bool getIR = true, 
-                        bool getSensors = false, bool getBody = false,
-                        bool getBodyIndex = false);
-    Imu_sample getSensorData();
-    ColorData getColorData();
-    DepthData getDepthData(bool align=false);
-    DepthData getIRData();
-    BufferPointCloud getPointCloud();
-    BufferColor getPointCloudColor();
-    void savePointCloud(const char *file_name);
-    Calibration getDepthCalibration();
-    Calibration getColorCalibration();
-    std::string getSerialNumber();
-    void setExposure(int);
-    const int getExposure();
-    void setGain(int);
+    const int get_frames(bool get_color = true, bool get_depth = true, bool get_ir = true, 
+                        bool get_sensors = false, bool get_body = false,
+                        bool get_body_index = false);
+    Imu_sample get_sensor_data();
+    ColorData get_color_data();
+    DepthData get_depth_data(bool align=false);
+    DepthData get_ir_data();
+    BufferPointCloud get_pointcloud();
+    BufferColor get_pointcloud_color();
+    void save_pointcloud(const char *file_name);
+    Calibration get_depth_calibration();
+    Calibration get_color_calibration();
+    std::string get_serial_number();
+    void set_exposure(int);
+    const int get_exposure();
+    void set_gain(int);
     std::vector<std::vector<int> > map_coords_color_to_depth(std::vector<std::vector<int> > &color_coords);
     std::vector<std::vector<int> > map_coords_color_to_3D(std::vector<std::vector<int> > &color_coords, bool depth_reference);
     std::vector<std::vector<int> > map_coords_depth_to_color(std::vector<std::vector<int> > &depth_coords);
     std::vector<std::vector<int> > map_coords_depth_to_3D(std::vector<std::vector<int> > &depth_coords);
 
     // Body tracking functions
-    int getNumBodies();
-    py::list getBodies();
-    BodyIndexData getBodyIndexMap(bool returnId=false);
+    int get_num_bodies();
+    py::list get_bodies();
+    BodyIndexData get_body_index_map(bool returnId=false);
 };
 
 #endif

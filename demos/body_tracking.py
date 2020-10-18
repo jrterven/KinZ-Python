@@ -18,7 +18,7 @@ import cmapy
 def main():
     # Create Kinect object and initialize
     kin = kinz.Kinect(resolution=720, wfov=False, binned=True, framerate=30,
-                    imuSensors=False, bodyTracking=True)
+                    imu_sensors=False, body_tracking=True)
 
     # Get depth aligned with color?
     align_frames = False
@@ -34,13 +34,13 @@ def main():
             t = cv2.getTickCount()
 
         # read kinect frames. If frames available return 1
-        if kin.getFrames(getColor=True, getDepth=True, getIR=False,
-                        getSensors=False, getBody=True, getBodyIndex=True):
-            color_data = kin.getColorData()
-            depth_data = kin.getDepthData(align=align_frames)
-            num_bodies = kin.getNumBodies()
-            bodies = kin.getBodies()
-            body_index_data = kin.getBodyIndexMap(returnId=True)
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False,
+                        get_sensors=False, get_body=True, get_body_index=True):
+            color_data = kin.get_color_data()
+            depth_data = kin.get_depth_data(align=align_frames)
+            num_bodies = kin.get_num_bodies()
+            bodies = kin.get_bodies()
+            body_index_data = kin.get_body_index_map(returnId=True)
 
             print("{:d} bodies detected.".format(num_bodies))
             print("bodies:", bodies)

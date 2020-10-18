@@ -11,32 +11,32 @@ import kinz
 kin = kinz.Kinect(resolution=1080, wfov=True, binned=True)
 
 # get calibration objects
-depth_calib = kin.getDepthCalibration()
-color_calib = kin.getColorCalibration()
+depth_calib = kin.get_depth_calibration()
+color_calib = kin.get_color_calibration()
 
 # extract calibration parameters
-depth_size = depth_calib.getSize() # image size
-color_size = color_calib.getSize()
+depth_size = depth_calib.get_size() # image size
+color_size = color_calib.get_size()
 
 # Intrinsics is a 3x3 if extended=False or 4x4 if extended=True
-depth_intrinsics = depth_calib.getIntrinsicsMatrix(extended=False)
-color_intrinsics = color_calib.getIntrinsicsMatrix(extended=False)
+depth_intrinsics = depth_calib.get_intrinsics_matrix(extended=False)
+color_intrinsics = color_calib.get_intrinsics_matrix(extended=False)
 
 # Distortion is a 8x1 numpy vector: k1,k2,p1,p2,k3,k4,k5,k6
-depth_dist = depth_calib.getDistortionParams()
-color_dist = color_calib.getDistortionParams()
+depth_dist = depth_calib.get_distortion_params()
+color_dist = color_calib.get_distortion_params()
 
 # Rotation is a 3x3 Rotation matrix wrt depth camera
-depth_rot = depth_calib.getRotationMatrix()
-color_rot = color_calib.getRotationMatrix()
+depth_rot = depth_calib.get_rotation_matrix()
+color_rot = color_calib.get_rotation_matrix()
 
 # Translation is a 3x1 translation vector wrt depth camera
-depth_trans = depth_calib.getTranslationVector()
-color_trans = color_calib.getTranslationVector()
+depth_trans = depth_calib.get_translation_vector()
+color_trans = color_calib.get_translation_vector()
 
 # Pose is a 4x4 pose matrix wrt depth camera
-depth_pose = depth_calib.getCameraPose()
-color_pose = color_calib.getCameraPose()
+depth_pose = depth_calib.get_camera_pose()
+color_pose = color_calib.get_camera_pose()
 
 print("----- DEPTH CALIBRATION ------")
 print("depth_size:", type(depth_size), depth_size)

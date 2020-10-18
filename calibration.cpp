@@ -1,13 +1,13 @@
 #include "calibration.h"
 
-py::list Calibration::getSize() { 
+py::list Calibration::get_size() { 
     py::list res;
     res.append(width);
     res.append(height);
     return res;
 }
 
-py::array_t<double> Calibration::getIntrinsicsMatrix(bool extended=false) {
+py::array_t<double> Calibration::get_intrinsics_matrix(bool extended=false) {
     int msize = 3;
     if(extended)
         msize = 4;
@@ -46,7 +46,7 @@ py::array_t<double> Calibration::getIntrinsicsMatrix(bool extended=false) {
         free_when_done); // numpy array references this parent
 }
 
-py::array_t<double> Calibration::getDistortionParams() {
+py::array_t<double> Calibration::get_distortion_params() {
     constexpr size_t size = 1*8;
     double *dist_params = new double[size];
     dist_params[0] = k1;
@@ -71,7 +71,7 @@ py::array_t<double> Calibration::getDistortionParams() {
         free_when_done); // numpy array references this parent
 }
 
-py::array_t<double> Calibration::getRotationMatrix() {
+py::array_t<double> Calibration::get_rotation_matrix() {
     constexpr size_t size = 3*3;
     double *rot = new double[size];
     for(unsigned int i=0; i<size; i++)
@@ -90,7 +90,7 @@ py::array_t<double> Calibration::getRotationMatrix() {
         free_when_done); // numpy array references this parent
 }
 
-py::array_t<double> Calibration::getTranslationVector() {
+py::array_t<double> Calibration::get_translation_vector() {
     constexpr size_t size = 3*1;
     double *t = new double[size];
     for(unsigned int i=0; i<size; i++)
@@ -109,7 +109,7 @@ py::array_t<double> Calibration::getTranslationVector() {
         free_when_done); // numpy array references this parent
 }
 
-py::array_t<double> Calibration::getCameraPose() {
+py::array_t<double> Calibration::get_camera_pose() {
     constexpr size_t size = 4*4;
     double *pose = new double[size];
     for(unsigned int i=0; i<size; i++)

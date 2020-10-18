@@ -17,12 +17,12 @@
 #include <pybind11/stl.h>
 
 Kinect::Kinect(uint8_t deviceIndex, int resolution, bool wfov, bool binned,
-               uint8_t framerate, bool sensorColor, bool sensorDepth,
-               bool sensorIR, bool imuSensors, bool bodyTracking,
-               bool bodyIndex) {
+               uint8_t framerate, bool sensor_color, bool sensor_depth,
+               bool sensor_ir, bool imu_sensors, bool body_tracking,
+               bool body_index) {
     initialize(deviceIndex, resolution, wfov, binned, framerate,
-               sensorColor, sensorDepth, sensorIR, imuSensors,
-               bodyTracking, bodyIndex);
+               sensor_color, sensor_depth, sensor_ir, imu_sensors,
+               body_tracking, body_index);
 }
 
 Kinect::~Kinect()
@@ -39,9 +39,9 @@ Kinect::~Kinect()
 *    2160: 3840 x 2160 @ 20 FPS, Aligned 10 FPS
 *    3072: 4096 x 3072 @ 12 FPS, Aligned 7 FPS
 */
-int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool binned, uint8_t framerate,
-    bool sensorColor, bool sensorDepth, bool sensorIR, bool imuSensors, bool bodyTracking,
-    bool bodyIndex) 
+int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binned, uint8_t framerate,
+    bool sensor_color, bool sensor_depth, bool sensor_ir, bool imu_sensors, bool body_tracking,
+    bool body_index) 
 {
     // Values initialization
     // Color resolution
@@ -93,7 +93,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
         m_config.synchronized_images_only = true;
 
     // Color Configuration
-    if (sensorColor) 
+    if (sensor_color) 
     {
         // Consider K4A_IMAGE_FORMAT_COLOR_MJPG. It is less CPU expensive
         m_config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
@@ -125,17 +125,17 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
     }
 
     // Configure Depth sensor
-    if (!sensorIR && !sensorDepth) 
+    if (!sensor_ir && !sensor_depth) 
     {
         m_config.depth_mode = K4A_DEPTH_MODE_OFF;
     }
-    else if (sensorIR && !sensorDepth)
+    else if (sensor_ir && !sensor_depth)
     {
         m_config.depth_mode = K4A_DEPTH_MODE_PASSIVE_IR;
     }
-    else if ((sensorIR && sensorDepth) || (!sensorIR && sensorDepth))
+    else if ((sensor_ir && sensor_depth) || (!sensor_ir && sensor_depth))
     {
-        if (wideFOV)
+        if (wfov)
         {
             if (binned)
             {
@@ -189,8 +189,8 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
             return 1;
         }
     }
-    updateCalibration(m_depth_calib, true);
-    updateCalibration(m_color_calib, false);
+    update_calibration(m_depth_calib, true);
+    update_calibration(m_color_calib, false);
 
     // get transformation to map from depth to color
     m_transformation = k4a_transformation_create(&m_calibration);
@@ -214,7 +214,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
 
     // Start IMU sensors
     m_imu_sensors_available = false;
-    if(imuSensors) {
+    if(imu_sensors) {
         if(k4a_device_start_imu(m_device) == K4A_RESULT_SUCCEEDED) {
             printf("IMU sensors started succesfully.\n");
             m_imu_sensors_available = true;
@@ -228,7 +228,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
     // Start tracker
     m_body_tracking_available = false;
     m_num_bodies = 0;
-    if (bodyTracking || bodyIndex) {
+    if (body_tracking || body_index) {
         k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
         if(k4abt_tracker_create(&m_calibration, tracker_config, &m_tracker) == K4A_RESULT_SUCCEEDED) {
             printf("Body tracking started succesfully.\n");
@@ -245,7 +245,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wideFOV, bool b
 } // initialize
 
 
-void Kinect::updateCalibration(Calibration &calib_struct, bool depth) {
+void Kinect::update_calibration(Calibration &calib_struct, bool depth) {
     k4a_calibration_camera_t  calib;
 
     if(depth)
@@ -276,20 +276,20 @@ void Kinect::updateCalibration(Calibration &calib_struct, bool depth) {
     
 }
 
-Calibration Kinect::getDepthCalibration() {
+Calibration Kinect::get_depth_calibration() {
     return m_depth_calib;
 }
 
-Calibration Kinect::getColorCalibration() {
+Calibration Kinect::get_color_calibration() {
     return m_color_calib;
 }
 
 
-const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
-                            bool getSensors, bool getBody, bool getBodyIndex) {
-    bool goodColor = true, goodDepth = true, goodIR = true;
+const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
+                            bool get_sensors, bool get_body, bool get_body_index) {
+    bool good_color = true, good_depth = true, good_ir = true;
     if (this->res==0)
-        getColor = false;
+        get_color = false;
 
     // Release images before next acquisition
     if (m_capture) {
@@ -337,31 +337,31 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
     }
 
     // Get color image
-    if(getColor) {
+    if(get_color) {
         m_image_c = k4a_capture_get_color_image(m_capture);
         if (m_image_c == NULL) {
-            goodColor = false;
+            good_color = false;
             printf("Could not read color image\n");
         }
     }
     // Get depth16 image
-    if(getDepth) {
+    if(get_depth) {
         m_image_d = k4a_capture_get_depth_image(m_capture);
         if (m_image_d == NULL) {
-            goodDepth = false;
+            good_depth = false;
             printf("Could not read depth image\n");
         }
     }
     // Get IR image
-    if(getIR) {
+    if(get_ir) {
         m_image_ir = k4a_capture_get_ir_image(m_capture);
         if (m_image_ir == NULL) {
-            goodIR = false;
+            good_ir = false;
             printf("Could not read IR image");
         }
     }
 
-    if(getSensors && m_imu_sensors_available) {
+    if(get_sensors && m_imu_sensors_available) {
         k4a_imu_sample_t imu_sample;
 
         // Capture a imu sample
@@ -394,7 +394,7 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
         }
     }
 
-    if (getBody && m_body_tracking_available) {
+    if (get_body && m_body_tracking_available) {
         // Get body tracking data
         k4a_wait_result_t queue_capture_result = k4abt_tracker_enqueue_capture(m_tracker, m_capture, K4A_WAIT_INFINITE);
         if (queue_capture_result == K4A_WAIT_RESULT_TIMEOUT) {
@@ -426,7 +426,7 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
                 }
                 m_bodies = bodies;
 
-                if(getBodyIndex) {
+                if(get_body_index) {
                     m_body_index = k4abt_frame_get_body_index_map(m_body_frame);
 
                     if (m_body_index == NULL) {
@@ -446,18 +446,18 @@ const int Kinect::getFrames(bool getColor, bool getDepth, bool getIR,
         }
     }
     
-    if(goodColor && goodDepth && goodIR)
+    if(good_color && good_depth && good_ir)
         return 1;
     else
         return 0;
-} // getFrames
+} // get_frames
 
-Imu_sample Kinect::getSensorData() {
+Imu_sample Kinect::get_sensor_data() {
     return m_imu_data;
 }
 
-ColorData Kinect::getColorData() {
-    ColorData colorData;
+ColorData Kinect::get_color_data() {
+    ColorData color_data;
 
     if(m_image_c) {
         int w = k4a_image_get_width_pixels(m_image_c);
@@ -469,20 +469,20 @@ ColorData Kinect::getColorData() {
         memcpy(data, dataBuffer, sz);
         BufferColor m((uint8_t *)data, h, w, stride);
         
-        colorData.buffer = m;
-        colorData.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_c);
-        return colorData;
+        color_data.buffer = m;
+        color_data.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_c);
+        return color_data;
     }
     else {
         BufferColor m(NULL, 0, 0, 0);
-        colorData.buffer = m;
-        colorData.timestamp_nsec = 0;
-        return colorData;
+        color_data.buffer = m;
+        color_data.timestamp_nsec = 0;
+        return color_data;
     }
 }
 
-DepthData Kinect::getDepthData(bool align) {
-    DepthData depthData;
+DepthData Kinect::get_depth_data(bool align) {
+    DepthData depth_data;
 
     if(m_image_d) {
         // align images
@@ -507,20 +507,20 @@ DepthData Kinect::getDepthData(bool align) {
         memcpy(data, dataBuffer, sz);
         BufferDepth m((uint16_t *)data, h, w, stride);
 
-        depthData.buffer = m;
-        depthData.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_d);
-        return depthData;
+        depth_data.buffer = m;
+        depth_data.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_d);
+        return depth_data;
     }
     else {
         BufferDepth m(NULL, 0, 0, 0);
-        depthData.buffer = m;
-        depthData.timestamp_nsec = 0;
-        return depthData;
+        depth_data.buffer = m;
+        depth_data.timestamp_nsec = 0;
+        return depth_data;
     }
 }
 
-DepthData Kinect::getIRData() {
-    DepthData irData;
+DepthData Kinect::get_ir_data() {
+    DepthData ir_data;
 
     if(m_image_ir) {
         int w = k4a_image_get_width_pixels(m_image_ir);
@@ -532,15 +532,15 @@ DepthData Kinect::getIRData() {
         memcpy(data, dataBuffer, sz);
         BufferDepth m((uint16_t *)data, h, w, stride);
         
-        irData.buffer = m;
-        irData.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_ir);
-        return irData;
+        ir_data.buffer = m;
+        ir_data.timestamp_nsec = k4a_image_get_system_timestamp_nsec(m_image_ir);
+        return ir_data;
     }
     else {
         BufferDepth m(NULL, 0, 0, 0);
-        irData.buffer = m;
-        irData.timestamp_nsec = 0;
-        return irData;
+        ir_data.buffer = m;
+        ir_data.timestamp_nsec = 0;
+        return ir_data;
     }
 }
 
@@ -590,7 +590,7 @@ bool Kinect::align_color_to_depth(k4a_image_t &transformed_color_image){
     return true;
 }
 
-std::string Kinect::getSerialNumber()
+std::string Kinect::get_serial_number()
 {
     return this->serial_number;
 }
@@ -632,7 +632,7 @@ void Kinect::close(){
     }
 }
 
-void Kinect::setExposure(int exposure) {
+void Kinect::set_exposure(int exposure) {
     if (m_device) {
         if (K4A_RESULT_SUCCEEDED != k4a_device_set_color_control(m_device,
                                     K4A_COLOR_CONTROL_EXPOSURE_TIME_ABSOLUTE,
@@ -646,7 +646,7 @@ void Kinect::setExposure(int exposure) {
     }
 }
 
-const int Kinect::getExposure() {
+const int Kinect::get_exposure() {
     int exposure = 0;
     if(m_image_c) {
         exposure = k4a_image_get_exposure_usec(m_image_c);
@@ -657,7 +657,7 @@ const int Kinect::getExposure() {
     return exposure;
 }
 
-void Kinect::setGain(int gain) {
+void Kinect::set_gain(int gain) {
     if (m_device) {
         if (K4A_RESULT_SUCCEEDED != k4a_device_set_color_control(m_device,
                                     K4A_COLOR_CONTROL_GAIN,
@@ -853,7 +853,7 @@ bool Kinect::depth_image_to_point_cloud(int width, int height, k4a_image_t &xyz_
     return true;
 }
 
-BufferPointCloud Kinect::getPointCloud() {
+BufferPointCloud Kinect::get_pointcloud() {
     if(m_image_d) {
         k4a_image_t image_xyz = NULL;
 
@@ -886,7 +886,7 @@ BufferPointCloud Kinect::getPointCloud() {
     }
 }
 
-BufferColor Kinect::getPointCloudColor() {
+BufferColor Kinect::get_pointcloud_color() {
     if(m_image_d) {
         k4a_image_t transformed_color_image = NULL;
 
@@ -916,7 +916,7 @@ BufferColor Kinect::getPointCloudColor() {
     }
 }
 
-void Kinect::savePointCloud(const char *file_name) {
+void Kinect::save_pointcloud(const char *file_name) {
     if(m_image_d) {
         k4a_image_t image_xyz = NULL;
         k4a_image_t transformed_color_image = NULL;
@@ -946,11 +946,11 @@ void Kinect::savePointCloud(const char *file_name) {
     }
 }
 
-int Kinect::getNumBodies() {
+int Kinect::get_num_bodies() {
     return m_num_bodies;
 }
 
-py::list Kinect::getBodies() {
+py::list Kinect::get_bodies() {
     return m_bodies;
 }
 
@@ -970,7 +970,7 @@ py::dict Kinect::get_body_data(k4abt_body_t body) {
                                  "Nose", "Eye_left", "Ear_left",
                                  "Eye_right", "Ear_right" }; 
 
-    const char *confidence_vals[4] = {"None", "Low", "Medium", "High"};
+    //const char *confidence_vals[4] = {"None", "Low", "Medium", "High"};
     
     body_data[py::str("id")] = body.id;
 
@@ -1034,7 +1034,7 @@ py::dict Kinect::get_body_data(k4abt_body_t body) {
     return body_data;
 }
 
-BodyIndexData Kinect::getBodyIndexMap(bool returnId) {
+BodyIndexData Kinect::get_body_index_map(bool returnId) {
     BodyIndexData bodyIndexMap;
 
     if(m_body_index) {
@@ -1044,7 +1044,7 @@ BodyIndexData Kinect::getBodyIndexMap(bool returnId) {
         uint8_t* dataBuffer = k4a_image_get_buffer(m_body_index);
         
         if (returnId)
-            changeBodyIndexToBodyId(dataBuffer, w, h);
+            change_body_index_to_body_id(dataBuffer, w, h);
 
         auto sz = k4a_image_get_size(m_body_index);
         void* data = malloc(sz);
@@ -1064,7 +1064,7 @@ BodyIndexData Kinect::getBodyIndexMap(bool returnId) {
 }
 
 
-void Kinect::changeBodyIndexToBodyId(uint8_t* image_data, int width, int height) {
+void Kinect::change_body_index_to_body_id(uint8_t* image_data, int width, int height) {
     for(int i=0; i < width*height; i++) {
         uint8_t index = *image_data;
 

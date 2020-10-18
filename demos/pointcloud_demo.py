@@ -27,15 +27,15 @@ try:
         dt0 = datetime.now()
 
         # read kinect frames. If frames available return 1
-        if kin.getFrames(getColor=True, getDepth=True, getIR=False):
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False):
             count += 1
 
             # Get the pointcloud data and convert to Numpy (512 x 512 x 3, int16)
-            pointcloud_data = kin.getPointCloud()
+            pointcloud_data = kin.get_pointcloud()
             pointcloud_np = np.array(pointcloud_data, copy = True)
 
             # Get the pointcloud color and conver to Numpy (512 x 512 x 3, uint8)
-            pointcloudcolor_data = kin.getPointCloudColor()
+            pointcloudcolor_data = kin.get_pointcloud_color()
             pointcloudcolor_np = np.array(pointcloudcolor_data, copy = True)
 
             # Every 10 pointclouds, print the statistics

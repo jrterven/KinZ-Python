@@ -14,11 +14,11 @@ import cv2
 import kinz
 
 # Create Kinect object and initialize
-kin = kinz.Kinect(resolution=720, wfov=True, binned=True, framerate=30, imuSensors=True)
+kin = kinz.Kinect(resolution=720, wfov=True, binned=True, framerate=30, imu_sensors=True)
 
 # Get depth aligned with color?
 align_frames = False
-image_scale = 0.25    # visualized image scale
+image_scale = 0.5    # visualized image scale
 
 # initialize fps counter
 t = cv2.getTickCount()
@@ -30,11 +30,12 @@ while True:
       t = cv2.getTickCount()
 
     # read kinect frames. If frames available return 1
-    if kin.getFrames(getColor=True, getDepth=True, getIR=True, getSensors=True):
-        color_data = kin.getColorData()
-        depth_data = kin.getDepthData(align=align_frames)
-        ir_data = kin.getIRData()
-        sensor_data = kin.getSensorData()
+    if kin.get_frames(get_color=True, get_depth=True, get_ir=True, get_sensors=True):
+        color_data = kin.get_color_data()
+        depth_data = kin.get_depth_data(align=align_frames)
+        ir_data = kin.get_ir_data()
+        sensor_data = kin.get_sensor_data()
+        print('Sensor data type:', type(sensor_data))
 
         # extract frames to np arrays
         depth_image = np.array(depth_data.buffer, copy = True)

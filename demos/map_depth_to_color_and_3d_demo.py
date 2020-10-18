@@ -31,9 +31,9 @@ def main():
     prev_points_3d = []
 
     while True:
-        if kin.getFrames(getColor=True, getDepth=True, getIR=False):
-            color_data = kin.getColorData()
-            depth_data = kin.getDepthData(align=False)
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False):
+            color_data = kin.get_color_data()
+            depth_data = kin.get_depth_data(align=False)
 
             depth_image = np.array(depth_data.buffer, copy = True)
             color_image = np.array(color_data.buffer, copy = True)

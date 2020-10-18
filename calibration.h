@@ -19,12 +19,12 @@ public:
     float rotation[9];
     float translation[3];
 
-    py::list getSize();
-    py::array_t<double> getIntrinsicsMatrix(bool);
-    py::array_t<double> getDistortionParams();
-    py::array_t<double> getRotationMatrix();
-    py::array_t<double> getTranslationVector();
-    py::array_t<double> getCameraPose();
+    py::list get_size();
+    py::array_t<double> get_intrinsics_matrix(bool);
+    py::array_t<double> get_distortion_params();
+    py::array_t<double> get_rotation_matrix();
+    py::array_t<double> get_translation_vector();
+    py::array_t<double> get_camera_pose();
 };
 
 #endif

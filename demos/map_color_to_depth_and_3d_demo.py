@@ -31,12 +31,12 @@ def main():
     prev_points_3d = []
     
     while True:
-        if kin.getFrames(getColor=True, getDepth=True, getIR=False):
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False):
             # get buffer data from Kinect
-            color_data = kin.getColorData()
-            depth_data = kin.getDepthData(align=False)
-            ir_data = kin.getIRData()
-            sensor_data = kin.getSensorData()
+            color_data = kin.get_color_data()
+            depth_data = kin.get_depth_data(align=False)
+            ir_data = kin.get_ir_data()
+            sensor_data = kin.get_sensor_data()
 
             # convert buffers to numpy arrays
             depth_image = np.array(depth_data.buffer, copy = True)

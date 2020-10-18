@@ -62,13 +62,13 @@ PYBIND11_MODULE(kinz, m) {
 
     py::class_<Calibration>(m, "Calibration")
         .def(py::init())
-        .def("getSize", &Calibration::getSize)
-        .def("getIntrinsicsMatrix", &Calibration::getIntrinsicsMatrix,
+        .def("get_size", &Calibration::get_size)
+        .def("get_intrinsics_matrix", &Calibration::get_intrinsics_matrix,
             py::arg("extended"))
-        .def("getDistortionParams", &Calibration::getDistortionParams)
-        .def("getRotationMatrix", &Calibration::getRotationMatrix)
-        .def("getTranslationVector", &Calibration::getTranslationVector)
-        .def("getCameraPose", &Calibration::getCameraPose)
+        .def("get_distortion_params", &Calibration::get_distortion_params)
+        .def("get_rotation_matrix", &Calibration::get_rotation_matrix)
+        .def("get_translation_vector", &Calibration::get_translation_vector)
+        .def("get_camera_pose", &Calibration::get_camera_pose)
         .def_readonly("width", &Calibration::width);
 
 
@@ -105,32 +105,32 @@ PYBIND11_MODULE(kinz, m) {
     py::class_<Kinect>(m, "Kinect")
         .def(py::init<uint8_t, int, bool, bool, uint8_t, bool, bool, bool, bool, bool, bool>(),
              py::arg("deviceIndex")=0, py::arg("resolution")=1080, py::arg("wfov")=false,
-             py::arg("binned")=true, py::arg("framerate")=30, py::arg("sensorColor")=true,
-             py::arg("sensorDepth")=true, py::arg("sensorIR")=true,
-             py::arg("imuSensors")=false, py::arg("bodyTracking")=false,
-             py::arg("bodyIndex")=false)
-        .def("getFrames", &Kinect::getFrames, "Read frames from Kinect",
-            py::arg("getColor")=true, py::arg("getDepth")=true,
-            py::arg("getIR")=true, py::arg("getSensors")=false,
-            py::arg("getBody")=false, py::arg("getBodyIndex")=false)
-        .def("getSensorData", &Kinect::getSensorData, "Return sensor struct")
-        .def("getColorData", &Kinect::getColorData, "Return color frame")
-        .def("getDepthData", &Kinect::getDepthData, "Return depth frame",
+             py::arg("binned")=true, py::arg("framerate")=30, py::arg("sensor_color")=true,
+             py::arg("sensor_depth")=true, py::arg("sensor_ir")=true,
+             py::arg("imu_sensors")=false, py::arg("body_tracking")=false,
+             py::arg("body_index")=false)
+        .def("get_frames", &Kinect::get_frames, "Read frames from Kinect",
+            py::arg("get_color")=true, py::arg("get_depth")=true,
+            py::arg("get_ir")=true, py::arg("get_sensors")=false,
+            py::arg("get_body")=false, py::arg("get_body_index")=false)
+        .def("get_sensor_data", &Kinect::get_sensor_data, "Return sensor struct")
+        .def("get_color_data", &Kinect::get_color_data, "Return color frame")
+        .def("get_depth_data", &Kinect::get_depth_data, "Return depth frame",
             py::arg("align")=false)
-        .def("getIRData", &Kinect::getIRData, "Return IR frame")
-        .def("getPointCloud", &Kinect::getPointCloud, "Return point cloud")
-        .def("getPointCloudColor", &Kinect::getPointCloudColor, "Return point cloud color values")
-        .def("savePointCloud", &Kinect::savePointCloud, "Save the current pointcloud to a ply file",
+        .def("get_ir_data", &Kinect::get_ir_data, "Return IR frame")
+        .def("get_pointcloud", &Kinect::get_pointcloud, "Return point cloud")
+        .def("get_pointcloud_color", &Kinect::get_pointcloud_color, "Return point cloud color values")
+        .def("save_pointcloud", &Kinect::save_pointcloud, "Save the current pointcloud to a ply file",
             py::arg("file_name"))
-        .def("getDepthCalibration", &Kinect::getDepthCalibration, py::return_value_policy::copy)
-        .def("getColorCalibration", &Kinect::getColorCalibration, py::return_value_policy::copy)
-        .def("getSerialNumber", &Kinect::getSerialNumber, "Return the serial number of the kinect")
+        .def("get_depth_calibration", &Kinect::get_depth_calibration, py::return_value_policy::copy)
+        .def("get_color_calibration", &Kinect::get_color_calibration, py::return_value_policy::copy)
+        .def("get_serial_number", &Kinect::get_serial_number, "Return the serial number of the kinect")
         .def("close", &Kinect::close)
-        .def("setExposure", &Kinect::setExposure, "Set exposure time",
+        .def("set_exposure", &Kinect::set_exposure, "Set exposure time",
             py::arg("exposure"))
-        .def("setGain", &Kinect::setExposure, "Set sensor gain",
+        .def("set_gain", &Kinect::set_gain, "Set sensor gain",
             py::arg("gain"))
-        .def("getExposure", &Kinect::getExposure, "Get exposure time")
+        .def("get_exposure", &Kinect::get_exposure, "Get exposure time")
         .def("map_coords_color_to_depth", &Kinect::map_coords_color_to_depth,
             "Map color pixel coordinates to depth image space")
         .def("map_coords_color_to_3D", &Kinect::map_coords_color_to_3D,
@@ -141,8 +141,8 @@ PYBIND11_MODULE(kinz, m) {
         .def("map_coords_depth_to_3D", &Kinect::map_coords_depth_to_3D,
             "Map depth pixel coordinates to 3D space of depth camera",
             py::arg("depth_coords"))
-        .def("getNumBodies", &Kinect::getNumBodies, "Get number of bodies found")
-        .def("getBodies", &Kinect::getBodies, "Get bodies list")
-        .def("getBodyIndexMap", &Kinect::getBodyIndexMap, "Return body index map frame",
+        .def("get_num_bodies", &Kinect::get_num_bodies, "Get number of bodies found")
+        .def("get_bodies", &Kinect::get_bodies, "Get bodies list")
+        .def("get_body_index_map", &Kinect::get_body_index_map, "Return body index map frame",
             py::arg("returnId")=false);
 }
