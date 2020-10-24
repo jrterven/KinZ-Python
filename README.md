@@ -1,10 +1,10 @@
-# Python Library for Kinect for Azure
+# KinZ for Python A library for Azure Kinect
 At the time of this writing, there are no official python bindings for Kinect for Azure.  
-This library allows to use Kinect for Azure directly in Python.
+This library allows to use Azure Kinect directly in Python.
 
 
 ## Installation:
-First install the k4a library as described in the [official repo](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md).
+First install the Azure Kinect SDK as described [here](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md).
 
 Then install the requirements (see environment.yaml).
 To create a fully functional conda environment run:
@@ -19,12 +19,13 @@ pip install .
 
 ## Demos
 Inside demos directory, you'll find demos showing all the features of the library.  
-Currently, there are only 3 demos:
-- **streamer-demo.py**: shows how to stream color, depth and IR images at different resolutions.
+Currently, there are only 6 demos:
+- **cameras_sensors_demo**: shows how to get color, depth IR, and IMU sensors.
 - **calibration-demo.py**: shows how to extract camera calibration values.
 - **map_depth_to_color_and_3d_demo.py**: shows how to map sparse points from depth to color and from depth to 3D.
 - **map_color_to_depth_and_3d_demo.py**: shows how to map sparse points from color to depth and from color to 3D.
-
+- **pointcloud_demo**: shows how to get the colored pointcloud and visualize it with open3D.
+- **body_tracking_demo**: shows how to get body tracking information and visualize it.
 
 ## Streaming Speed
 The streaming speeds in Python are the following:
@@ -41,5 +42,5 @@ The streaming speeds in Python are the following:
 
 ## Uninstall:
 ```sh
-pip uninstall pyk4
+pip uninstall kinz
 ```
