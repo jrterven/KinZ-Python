@@ -1,4 +1,4 @@
-name: pyk4
+name: kinz
 dependencies:
   - python=3.6
   - numpy
@@ -6,4 +6,5 @@ dependencies:
   - pip
   - pip:
     - opencv-contrib-python
+    - open3d
     
