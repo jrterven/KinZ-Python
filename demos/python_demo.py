@@ -6,30 +6,30 @@ import kinz
 def main():
   # Create Kinect object and initialize
   kz = kinz.Kinect(resolution=720, wfov=True, binned=True,
-                    framerate=30, imuSensors=True,
-                    bodyTracking=True)
+                    framerate=30, imu_sensors=True,
+                    body_tracking=True)
 
   while True:
     # Capture kinect frames
-    if kz.getFrames(getColor=True, getDepth=True,
-                     getIR=True, getSensors=True,
-                     getBody=True, getBodyIndex=True):
+    if kz.get_frames(get_color=True, get_depth=True,
+                     get_ir=True, get_sensors=True,
+                     get_body=True, get_body_index=True):
       # Read cameras data
-      color_data = kz.getColorData()
-      depth_data = kz.getDepthData(align=False)
-      ir_data = kz.getIRData()
+      color_data = kz.get_color_data()
+      depth_data = kz.get_depth_data(align=False)
+      ir_data = kz.get_ir_data()
       
       # Read sensor data
-      sensor_data = kz.getSensorData()
-      num_bodies = kz.getNumBodies()
+      sensor_data = kz.get_sensor_data()
+      num_bodies = kz.get_num_bodies()
       
       # Read body tracking data
-      bodies = kz.getBodies()
-      body_idx_data = kz.getBodyIndexMap(returnId=True)
+      bodies = kz.get_bodies()
+      body_idx_data = kz.get_body_index_map(returnId=True)
 
       # Read pointcloud data
-      pointcloud_data = kz.getPointCloud()
-      pointcloudcolor_data = kz.getPointCloudColor()
+      pointcloud_data = kz.get_pointcloud()
+      pointcloudcolor_data = kz.get_pointcloud_color()
 
       # Copy pointcloud data to numpy arrays
       pointcloud_np = np.array(pointcloud_data)

@@ -82,7 +82,7 @@ try:
                 pointcloud_ouput_path = os.path.join(POINTCLOUD_OUTPUT_DIR, "pointcloud_{:d}.ply".format(count))
                 print("Saving Pointcloud in {}".format(pointcloud_ouput_path))
                 
-                kin.savePointCloud(pointcloud_ouput_path)
+                kin.save_pointcloud(pointcloud_ouput_path)
                 break
 
 finally:
