@@ -35,7 +35,6 @@ while True:
         depth_data = kin.get_depth_data(align=align_frames)
         ir_data = kin.get_ir_data()
         sensor_data = kin.get_sensor_data()
-        print('Sensor data type:', type(sensor_data))
 
         # extract frames to np arrays
         depth_image = np.array(depth_data.buffer, copy = True)

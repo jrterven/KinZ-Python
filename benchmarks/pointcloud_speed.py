@@ -1,12 +1,4 @@
-"""
-  Kinect for Azure Pointcloud demo
-
-    This demo uses the Open3D library to visualize the pointcloud.
-    It saves a Pointcloud in a PLY file.
-"""
-from datetime import datetime
 import numpy as np 
-import os
 import cv2
 import kinz
 

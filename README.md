@@ -44,3 +44,5 @@ The streaming speeds in Python are the following:
 ```sh
 pip uninstall kinz
 ```
+
+![RGB, Depth, and Infrared](/demos/demo.png "Video Demo")
