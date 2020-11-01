@@ -86,8 +86,6 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binn
     this->serial_number = serial;
     free(serial);
 
-
-
     // Turn image sync if RGB or IR is present
     if (m_config.color_resolution != K4A_COLOR_RESOLUTION_OFF && m_config.depth_mode != K4A_DEPTH_MODE_OFF )
         m_config.synchronized_images_only = true;
@@ -225,6 +223,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binn
         }
     }
 
+    #ifdef BODY
     // Start tracker
     m_body_tracking_available = false;
     m_num_bodies = 0;
@@ -239,6 +238,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binn
             m_body_tracking_available = false;
         }
     }
+    #endif
 
     
     return 0;
@@ -308,6 +308,8 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
         k4a_image_release(m_image_ir);
         m_image_ir = NULL;
     }
+
+    #ifdef BODY
     if (m_body_index) {
         k4a_image_release(m_body_index);
         m_body_index = NULL;
@@ -316,6 +318,7 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
         k4abt_frame_release(m_body_frame);
         m_body_frame = NULL;
     }
+    #endif
 
     // Get a m_capture
     switch (k4a_device_get_capture(m_device, &m_capture, TIMEOUT_IN_MS)) {
@@ -394,6 +397,7 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
         }
     }
 
+    #ifdef BODY
     if (get_body && m_body_tracking_available) {
         // Get body tracking data
         k4a_wait_result_t queue_capture_result = k4abt_tracker_enqueue_capture(m_tracker, m_capture, K4A_WAIT_INFINITE);
@@ -445,6 +449,7 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
             }
         }
     }
+    #endif
     
     if(good_color && good_depth && good_ir)
         return 1;
@@ -596,11 +601,22 @@ std::string Kinect::get_serial_number()
 }
 
 void Kinect::close(){
+    #ifdef BODY
     if (m_tracker != NULL) {
         k4abt_tracker_shutdown(m_tracker);
         k4abt_tracker_destroy(m_tracker);
         m_tracker = NULL;
     }
+    if (m_body_index) {
+        k4a_image_release(m_body_index);
+        m_body_index = NULL;
+    }
+    if (m_body_frame) {
+        k4abt_frame_release(m_body_frame);
+        m_body_frame = NULL;
+    }
+    #endif
+
     if (m_device != NULL) {
         k4a_device_stop_cameras(m_device);
         k4a_device_close(m_device);
@@ -617,14 +633,6 @@ void Kinect::close(){
     if (m_image_ir) {
         k4a_image_release(m_image_ir);
         m_image_ir = NULL;
-    }
-    if (m_body_index) {
-        k4a_image_release(m_body_index);
-        m_body_index = NULL;
-    }
-    if (m_body_frame) {
-        k4abt_frame_release(m_body_frame);
-        m_body_frame = NULL;
     }
     if (m_capture != NULL) {
         k4a_capture_release(m_capture);
@@ -946,6 +954,7 @@ void Kinect::save_pointcloud(const char *file_name) {
     }
 }
 
+#ifdef BODY
 int Kinect::get_num_bodies() {
     return m_num_bodies;
 }
@@ -1073,5 +1082,6 @@ void Kinect::change_body_index_to_body_id(uint8_t* image_data, int width, int he
         image_data++;
     }
 }
+#endif
 
 

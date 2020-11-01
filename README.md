@@ -4,18 +4,24 @@ This library allows to use Azure Kinect directly in Python.
 
 
 ## Installation:
-First install the Azure Kinect SDK as described [here](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md).
-
-Then install the requirements (see environment.yaml).
+1. Install the Azure Kinect SDK as described [here](https://docs.microsoft.com/en-us/azure/kinect-dk/sensor-sdk-download)  where it says Microsoft installer. For Windows, Download the .exe and follow the steps. For Ubuntu use the *sudo apt install* commands shown in the same page.
+2. For Body tracking functionality (optional), you need an NVIDIA GPU and install CUDA. Download from [here](https://developer.nvidia.com/cuda-downloads?/).
+3. For Body tracking functionality (optional), install the Azure Kinect Body Tracking SDK. For Windows, download the msi installer from [here](https://docs.microsoft.com/en-us/azure/kinect-dk/body-sdk-download). For Ubuntu simply run the *sudo apt install* command provided in the webpage.
+4. Before compiling the code for Matlab, make sure the Kinect works correctly using the viewers provided my Microsoft, e.g. *C:\Program Files\Azure Kinect SDK v1.4.1\tools\k4aviewer.exe* and *C:\Program Files\Azure Kinect Body Tracking SDK\tools\k4abt_simple_3d_viewer.exe*. In Linux just type *k4aviewer* or *k4abt_simple_3d_viewer* in the terminal.
+5. Install the Python requirements (see environment.yaml).
 To create a fully functional conda environment run:
 ```sh
 conda env create --file environment.yaml
 ```
-
-Then install the library with:
+6. Install the library with:
 ```sh
 pip install .
 ```
+7. To install KinZ with body tracking functionality run:
+```sh
+CFLAGS="-DBODY" pip install .
+```
+
 
 ## Demos
 Inside demos directory, you'll find demos showing all the features of the library.  
