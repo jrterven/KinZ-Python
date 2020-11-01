@@ -19,7 +19,7 @@ pip install .
 ```
 7. To install KinZ with body tracking functionality run:
 ```sh
-CFLAGS="-DBODY" pip install .
+CFLAGS="-l:libk4abt.so -DBODY" pip install .
 ```
 
 
