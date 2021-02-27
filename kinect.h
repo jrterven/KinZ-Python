@@ -43,8 +43,10 @@ private:
     // color, depth, IR, and body index images
     k4a_image_t m_image_c = nullptr;
     k4a_image_t m_image_d = nullptr;
+    k4a_image_t m_image_d_org = nullptr;
     k4a_image_t m_image_ir = nullptr;
     k4a_image_t m_body_index = nullptr;
+    bool m_align_depth = false;
 
     // Sensor data
     Imu_sample m_imu_data;
@@ -78,6 +80,7 @@ private:
     #ifdef BODY
     py::dict get_body_data(k4abt_body_t body);
     void change_body_index_to_body_id(uint8_t* image_data, int width, int height);
+    k4a_image_t convert_body_index_map_to_colour();
     #endif
 
 public:
@@ -91,10 +94,10 @@ public:
     void close();
     const int get_frames(bool get_color = true, bool get_depth = true, bool get_ir = true, 
                         bool get_sensors = false, bool get_body = false,
-                        bool get_body_index = false);
+                        bool get_body_index = false, bool align_depth = false);
     Imu_sample get_sensor_data();
     ColorData get_color_data();
-    DepthData get_depth_data(bool align=false);
+    DepthData get_depth_data();
     DepthData get_ir_data();
     BufferPointCloud get_pointcloud();
     BufferColor get_pointcloud_color();
@@ -108,13 +111,15 @@ public:
     std::vector<std::vector<int> > map_coords_color_to_depth(std::vector<std::vector<int> > &color_coords);
     std::vector<std::vector<int> > map_coords_color_to_3D(std::vector<std::vector<int> > &color_coords, bool depth_reference);
     std::vector<std::vector<int> > map_coords_depth_to_color(std::vector<std::vector<int> > &depth_coords);
-    std::vector<std::vector<int> > map_coords_depth_to_3D(std::vector<std::vector<int> > &depth_coords);
+    std::vector<std::vector<int> > map_coords_depth_to_3D(std::vector<std::vector<int> > &depth_coords, bool depth_reference);
+    std::vector<std::vector<int> > map_coords_3d_to_depth(std::vector<std::vector<int> > &coords3d, bool depth_reference);
+    std::vector<std::vector<int> > map_coords_3d_to_color(std::vector<std::vector<int> > &coords3d, bool depth_reference);
 
     // Body tracking functions
     #ifdef BODY
     int get_num_bodies();
     py::list get_bodies();
-    BodyIndexData get_body_index_map(bool returnId=false);
+    BodyIndexData get_body_index_map(bool returnId=false, bool inColor=false);
     #endif
 };
 

@@ -17,11 +17,11 @@ import cmapy
 
 def main():
     # Create Kinect object and initialize
-    kin = kinz.Kinect(resolution=720, wfov=False, binned=True, framerate=30,
+    kin = kinz.Kinect(resolution=1080, wfov=True, binned=True, framerate=30,
                     imu_sensors=False, body_tracking=True)
 
     # Get depth aligned with color?
-    align_frames = False
+    align_frames = True
     image_scale = 0.5    # visualized image scale
 
     # initialize fps counter
@@ -35,14 +35,14 @@ def main():
 
         # read kinect frames. If frames available return 1
         if kin.get_frames(get_color=True, get_depth=True, get_ir=False,
-                        get_sensors=False, get_body=True, get_body_index=True):
+                        get_sensors=False, get_body=True, get_body_index=True,
+                        align_depth=align_frames):
             color_data = kin.get_color_data()
-            depth_data = kin.get_depth_data(align=align_frames)
-            num_bodies = kin.get_num_bodies()
+            depth_data = kin.get_depth_data()
             bodies = kin.get_bodies()
-            body_index_data = kin.get_body_index_map(returnId=True)
+            body_index_data = kin.get_body_index_map(returnId=True, inColor=False)
 
-            print("{:d} bodies detected.".format(num_bodies))
+            #print("{:d} bodies detected.".format(num_bodies))
             print("bodies:", bodies)
 
             # extract frames to np arrays
@@ -50,6 +50,7 @@ def main():
             color_image = np.array(color_data.buffer, copy=True) # image is BGRA
             color_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR) # to BGR
             body_index_image = np.array(body_index_data.buffer, copy=True)
+            print(body_index_image.shape)
 
             # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)

@@ -22,7 +22,7 @@ def main():
     kin = kinz.Kinect(resolution=720, wfov=True, binned=True)
 
     depth_window_name = 'Mapped coordinates to Depth image'
-    color_window_name = 'Clico on the Color image'
+    color_window_name = 'Click on the Color image'
     cv2.namedWindow(color_window_name, cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow(depth_window_name, cv2.WINDOW_AUTOSIZE)
     cv2.setMouseCallback(color_window_name, mouse_event)
@@ -31,10 +31,10 @@ def main():
     prev_points_3d = []
     
     while True:
-        if kin.get_frames(get_color=True, get_depth=True, get_ir=False):
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False, align_depth=True):
             # get buffer data from Kinect
             color_data = kin.get_color_data()
-            depth_data = kin.get_depth_data(align=False)
+            depth_data = kin.get_depth_data()
             ir_data = kin.get_ir_data()
             sensor_data = kin.get_sensor_data()
 
@@ -47,6 +47,7 @@ def main():
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(
                             depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
+            print("Color coords:", color_coords)
             # Project color image points to depth image
             # color_coords is a list of value pairs [[xc1,yc1], [xc2,yc2], ...]
             # depth_coords have the same format as color_coords
@@ -55,6 +56,7 @@ def main():
             # e.g. if at [x2, y2] the depth is 0 depth_coords = [[xd1, yd1], [-1, -1]]
             # we select -1 because there can not be negative pixel coordinates
             depth_coords = kin.map_coords_color_to_depth(color_coords)
+            print("Depth coords:", depth_coords)
 
             # Backproject color image points to 3D depth camera space
             # points_3d is a list of triplets of X, Y, Z points in
@@ -68,8 +70,20 @@ def main():
             points_3d = kin.map_coords_color_to_3D(color_coords,
                                                       depth_reference=False)
 
-            if points_3d != prev_points_3d:
-                print("3D point:", points_3d)
+            #if points_3d != prev_points_3d:
+            print("3D points:", points_3d)
+
+            # Project 3D points image points to depth image and color image
+            # points_3d is a list of value triplets [[X1, Y1, Z1], [X2, Y2, Z2], ...]
+            # depth_coords2 and color_coords2 have the same format: [[x1, y1], [x2, y2], ...]
+            # depth_coords return -1 if there is no depth information
+            # at the desire location,
+            # e.g. if at [x2, y2] the depth is 0 depth_coords = [[xd1, yd1], [-1, -1]]
+            # we select -1 because there can not be negative pixel coordinates
+            depth_coords2 = kin.map_coords_3d_to_depth(points_3d, depth_reference=False)
+            color_coords2 = kin.map_coords_3d_to_color(points_3d, depth_reference=False)
+            print("Color coords2:", color_coords2)
+            print("Depth coords2:", depth_coords2)
 
             ## Visualization
             # Draw color image points
@@ -85,7 +99,7 @@ def main():
 
         prev_points_3d = points_3d
 
-        k = cv2.waitKey(1) & 0xFF
+        k = cv2.waitKey(10) & 0xFF
         if k == ord('c'):
             color_coords = []
         if k ==27:

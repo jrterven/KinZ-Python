@@ -19,7 +19,7 @@ def mouse_event(event, x, y, flags, param):
 def main():
     global depth_points
     # Create Kinect object and initialize
-    kin = kinz.Kinect(resolution=1080, wfov=True, binned=True)
+    kin = kinz.Kinect(resolution=720, wfov=True, binned=True)
     
     depth_window_name = 'Click on the Depth image'
     color_window_name = 'Mapped coordinates in Color'
@@ -31,9 +31,9 @@ def main():
     prev_points_3d = []
 
     while True:
-        if kin.get_frames(get_color=True, get_depth=True, get_ir=False):
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False, align_depth=True):
             color_data = kin.get_color_data()
-            depth_data = kin.get_depth_data(align=False)
+            depth_data = kin.get_depth_data()
 
             depth_image = np.array(depth_data.buffer, copy = True)
             color_image = np.array(color_data.buffer, copy = True)

@@ -41,7 +41,7 @@ Kinect::~Kinect()
 */
 int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binned, uint8_t framerate,
     bool sensor_color, bool sensor_depth, bool sensor_ir, bool imu_sensors, bool body_tracking,
-    bool body_index) 
+    bool body_index)
 {
     // Values initialization
     // Color resolution
@@ -54,7 +54,6 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binn
     m_config.color_resolution = K4A_COLOR_RESOLUTION_OFF;
     // depth mode
     m_config.depth_mode = K4A_DEPTH_MODE_OFF;
-
 
     // Devices available
     uint32_t m_device_count = k4a_device_get_installed_count();
@@ -240,7 +239,7 @@ int Kinect::initialize(uint8_t deviceIndex, int resolution, bool wfov, bool binn
     }
     #endif
 
-    
+
     return 0;
 } // initialize
 
@@ -285,8 +284,11 @@ Calibration Kinect::get_color_calibration() {
 }
 
 
-const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
-                            bool get_sensors, bool get_body, bool get_body_index) {
+const int Kinect::get_frames(bool get_color, bool get_depth,
+                             bool get_ir, bool get_sensors,
+                             bool get_body, bool get_body_index,
+                             bool align_depth) {
+    m_align_depth = align_depth;
     bool good_color = true, good_depth = true, good_ir = true;
     if (this->res==0)
         get_color = false;
@@ -304,6 +306,11 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
         k4a_image_release(m_image_d);
         m_image_d = NULL;
     }
+    if (m_image_d_org) {
+        k4a_image_release(m_image_d_org);
+        m_image_d_org = NULL;
+    }
+
     if (m_image_ir) {
         k4a_image_release(m_image_ir);
         m_image_ir = NULL;
@@ -350,6 +357,7 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
     // Get depth16 image
     if(get_depth) {
         m_image_d = k4a_capture_get_depth_image(m_capture);
+        m_image_d_org = k4a_capture_get_depth_image(m_capture);
         if (m_image_d == NULL) {
             good_depth = false;
             printf("Could not read depth image\n");
@@ -450,7 +458,7 @@ const int Kinect::get_frames(bool get_color, bool get_depth, bool get_ir,
         }
     }
     #endif
-    
+
     if(good_color && good_depth && good_ir)
         return 1;
     else
@@ -486,12 +494,12 @@ ColorData Kinect::get_color_data() {
     }
 }
 
-DepthData Kinect::get_depth_data(bool align) {
+DepthData Kinect::get_depth_data() {
     DepthData depth_data;
 
     if(m_image_d) {
         // align images
-        if(align) {
+        if(m_align_depth) {
             k4a_image_t image_dc;
             if(align_depth_to_color(k4a_image_get_width_pixels(m_image_c),
                 k4a_image_get_height_pixels(m_image_c), image_dc)) {
@@ -630,6 +638,10 @@ void Kinect::close(){
         k4a_image_release(m_image_d);
         m_image_d = NULL;
     }
+    if (m_image_d_org != NULL) {
+        k4a_image_release(m_image_d_org);
+        m_image_d_org = NULL;
+    }
     if (m_image_ir) {
         k4a_image_release(m_image_ir);
         m_image_ir = NULL;
@@ -679,10 +691,14 @@ void Kinect::set_gain(int gain) {
     }
 }
 
-
 std::vector<std::vector<int> > Kinect::map_coords_color_to_depth(std::vector<std::vector<int> > &color_coords) {
     k4a_float2_t init_coords, depth_coords;
     std::vector<std::vector<int> > final_coords;
+
+    if (m_align_depth) {
+        final_coords = color_coords;
+        return final_coords;
+    }
     int val;
     k4a_result_t res;
 
@@ -710,13 +726,21 @@ std::vector<std::vector<int> > Kinect::map_coords_color_to_3D(
     std::vector<std::vector<int> > depth_coords;
     std::vector<std::vector<int> > final_coords;
 
+    if (color_coords.size() == 0)
+        return final_coords;
+
     k4a_calibration_type_t reference = K4A_CALIBRATION_TYPE_DEPTH;
     if (!depth_reference)
         reference = K4A_CALIBRATION_TYPE_COLOR;
 
+    k4a_calibration_type_t source_calib;
+    if (m_align_depth)
+        source_calib = K4A_CALIBRATION_TYPE_COLOR;
+    else
+        source_calib = K4A_CALIBRATION_TYPE_DEPTH;
 
     // get the depth data
-    int h = k4a_image_get_height_pixels(m_image_d);
+    int stride = (int)(k4a_image_get_stride_bytes(m_image_d)/2);
     uint16_t *depth_data = (uint16_t *)(void *)k4a_image_get_buffer(m_image_d);
 
     // from color to depth
@@ -732,9 +756,9 @@ std::vector<std::vector<int> > Kinect::map_coords_color_to_3D(
             coordsdepth.xy.x = depth_coords[i][0];
             coordsdepth.xy.y = depth_coords[i][1];
             // get depth value
-            float depth = (float)depth_data[h*depth_coords[i][1] + depth_coords[i][0]];
-            k4a_calibration_2d_to_3d(&m_calibration, &coordsdepth, depth, 
-                                     K4A_CALIBRATION_TYPE_DEPTH, 
+            float depth = (float)depth_data[stride*depth_coords[i][1] + depth_coords[i][0]];
+            k4a_calibration_2d_to_3d(&m_calibration, &coordsdepth, depth,
+                                     source_calib,
                                      reference,
                                      &coords3d, &valid);
             if(valid == 1) {
@@ -765,16 +789,20 @@ std::vector<std::vector<int> > Kinect::map_coords_depth_to_color(std::vector<std
     int val;
     k4a_result_t res;
 
-    int h = k4a_image_get_height_pixels(m_image_d);
+    k4a_calibration_type_t source_calib = K4A_CALIBRATION_TYPE_DEPTH;
+    if (m_align_depth)
+        source_calib = K4A_CALIBRATION_TYPE_COLOR;
+
+    int stride = (int)(k4a_image_get_stride_bytes(m_image_d)/2);
     uint16_t *depth_data = (uint16_t *)(void *)k4a_image_get_buffer(m_image_d);
 
     for(unsigned int i=0; i < depth_coords.size(); i++) {
         std::vector<int> c_coords;
         init_coords.xy.x = depth_coords[i][0];
         init_coords.xy.y = depth_coords[i][1];
-        float depth = (float)depth_data[h*depth_coords[i][1] + depth_coords[i][0]];
+        float depth = (float)depth_data[stride*depth_coords[i][1] + depth_coords[i][0]];
         res = k4a_calibration_2d_to_2d(&m_calibration, &init_coords, depth,
-                                       K4A_CALIBRATION_TYPE_DEPTH, K4A_CALIBRATION_TYPE_COLOR,
+                                       source_calib, K4A_CALIBRATION_TYPE_COLOR,
                                        &color_coords, &val);
         if(res == K4A_RESULT_SUCCEEDED) {
             c_coords.push_back(color_coords.xy.x);
@@ -790,11 +818,25 @@ std::vector<std::vector<int> > Kinect::map_coords_depth_to_color(std::vector<std
 }
 
 std::vector<std::vector<int> > Kinect::map_coords_depth_to_3D(
-                            std::vector<std::vector<int> > &depth_coords) {
+                            std::vector<std::vector<int> > &depth_coords,
+                            bool depth_reference) {
     std::vector<std::vector<int> > final_coords;
 
+    if (depth_coords.size() == 0)
+        return final_coords;
+
+    k4a_calibration_type_t reference = K4A_CALIBRATION_TYPE_DEPTH;
+    if (!depth_reference || m_align_depth)
+        reference = K4A_CALIBRATION_TYPE_COLOR;
+
+    k4a_calibration_type_t source_calib;
+    if (m_align_depth)
+        source_calib = K4A_CALIBRATION_TYPE_COLOR;
+    else
+        source_calib = K4A_CALIBRATION_TYPE_DEPTH;
+
     // get the depth data
-    int h = k4a_image_get_height_pixels(m_image_d);
+    int stride = (int)(k4a_image_get_stride_bytes(m_image_d)/2);
     uint16_t *depth_data = (uint16_t *)(void *)k4a_image_get_buffer(m_image_d);
 
     // from depth to 3D
@@ -807,10 +849,10 @@ std::vector<std::vector<int> > Kinect::map_coords_depth_to_3D(
             coordsdepth.xy.x = depth_coords[i][0];
             coordsdepth.xy.y = depth_coords[i][1];
             // get depth value
-            float depth = (float)depth_data[h*depth_coords[i][1] + depth_coords[i][0]];
+            float depth = (float)depth_data[stride*depth_coords[i][1] + depth_coords[i][0]];
             k4a_calibration_2d_to_3d(&m_calibration, &coordsdepth, depth, 
-                                     K4A_CALIBRATION_TYPE_DEPTH, 
-                                     K4A_CALIBRATION_TYPE_DEPTH,
+                                     source_calib,
+                                     reference,
                                      &coords3d, &valid);
             if(valid == 1) {
                 coords3d_vect.push_back(coords3d.xyz.x);
@@ -831,6 +873,92 @@ std::vector<std::vector<int> > Kinect::map_coords_depth_to_3D(
         final_coords.push_back(coords3d_vect);
     }
 
+    return final_coords;
+}
+
+std::vector<std::vector<int> > Kinect::map_coords_3d_to_depth(
+                            std::vector<std::vector<int> > &coords3d,
+                            bool depth_reference) {
+    std::vector<std::vector<int> > final_coords;
+    k4a_result_t res;
+
+    k4a_calibration_type_t reference = K4A_CALIBRATION_TYPE_DEPTH;
+    k4a_calibration_type_t destination = K4A_CALIBRATION_TYPE_DEPTH;
+    if (!depth_reference)
+        reference = K4A_CALIBRATION_TYPE_COLOR;
+    if (m_align_depth)
+        destination = K4A_CALIBRATION_TYPE_COLOR;
+
+    for(unsigned int i=0; i < coords3d.size(); i++) {
+        std::vector<int> coords2d_vect;
+        k4a_float2_t coords2d;
+        k4a_float3_t kin_coords3d;
+
+        if(coords3d[i][0] != 0 && coords3d[i][1] != 0 && coords3d[i][2] != 0) {
+            kin_coords3d.xyz.x = coords3d[i][0];
+            kin_coords3d.xyz.y = coords3d[i][1];
+            kin_coords3d.xyz.z = coords3d[i][2];
+
+            int val;
+            res = k4a_calibration_3d_to_2d(&m_calibration, &kin_coords3d,
+                                     reference, destination,
+                                     &coords2d, &val);
+            if(res == K4A_RESULT_SUCCEEDED && val == 1) {
+                coords2d_vect.push_back(coords2d.xy.x);
+                coords2d_vect.push_back(coords2d.xy.y);
+            }
+            else {
+                coords2d_vect.push_back(-1);
+                coords2d_vect.push_back(-1);
+            }
+        }
+        else {
+            coords2d_vect.push_back(-1);
+            coords2d_vect.push_back(-1);
+        }
+        final_coords.push_back(coords2d_vect);
+    }
+    return final_coords;
+}
+
+std::vector<std::vector<int> > Kinect::map_coords_3d_to_color(
+                            std::vector<std::vector<int> > &coords3d,
+                            bool depth_reference) {
+    std::vector<std::vector<int> > final_coords;
+    k4a_result_t res;
+    k4a_calibration_type_t reference = K4A_CALIBRATION_TYPE_DEPTH;
+    if (!depth_reference)
+        reference = K4A_CALIBRATION_TYPE_COLOR;
+
+    for(unsigned int i=0; i < coords3d.size(); i++) {
+        std::vector<int> coords2d_vect;
+        k4a_float2_t coords2d;
+        k4a_float3_t kin_coords3d;
+
+        if(coords3d[i][0] != 0 && coords3d[i][1] != 0 && coords3d[i][2] != 0) {
+            kin_coords3d.xyz.x = coords3d[i][0];
+            kin_coords3d.xyz.y = coords3d[i][1];
+            kin_coords3d.xyz.z = coords3d[i][2];
+
+            int val;
+            res = k4a_calibration_3d_to_2d(&m_calibration, &kin_coords3d,
+                                     reference, K4A_CALIBRATION_TYPE_COLOR,
+                                     &coords2d, &val);
+            if(res == K4A_RESULT_SUCCEEDED && val == 1) {
+                coords2d_vect.push_back(coords2d.xy.x);
+                coords2d_vect.push_back(coords2d.xy.y);
+            }
+            else {
+                coords2d_vect.push_back(-1);
+                coords2d_vect.push_back(-1);
+            }
+        }
+        else {
+            coords2d_vect.push_back(-1);
+            coords2d_vect.push_back(-1);
+        }
+        final_coords.push_back(coords2d_vect);
+    }
     return final_coords;
 }
 
@@ -1043,9 +1171,11 @@ py::dict Kinect::get_body_data(k4abt_body_t body) {
     return body_data;
 }
 
-BodyIndexData Kinect::get_body_index_map(bool returnId) {
+BodyIndexData Kinect::get_body_index_map(bool returnId, bool inColor) {
     BodyIndexData bodyIndexMap;
 
+    if (inColor)
+        m_body_index = convert_body_index_map_to_colour();
     if(m_body_index) {
         int w = k4a_image_get_width_pixels(m_body_index);
         int h = k4a_image_get_height_pixels(m_body_index);
@@ -1081,6 +1211,47 @@ void Kinect::change_body_index_to_body_id(uint8_t* image_data, int width, int he
         *image_data = (uint8_t)body_id;
         image_data++;
     }
+}
+
+k4a_image_t Kinect::convert_body_index_map_to_colour()
+{
+    k4a_image_t depth_image_in_colour_space = nullptr;
+
+    k4a_result_t result = k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
+        k4a_image_get_width_pixels(m_image_c),
+        k4a_image_get_height_pixels(m_image_c),
+        k4a_image_get_width_pixels(m_image_c) * (int)sizeof(uint16_t), &depth_image_in_colour_space);
+
+    if (result == K4A_RESULT_FAILED) {
+        printf("ERROR: Failed to create depth image in colour space\n");
+        return nullptr;
+    }
+
+    k4a_image_t body_index_in_colour_space = nullptr;
+    result = k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM8,
+                              k4a_image_get_width_pixels(m_image_c),
+                              k4a_image_get_height_pixels(m_image_c),
+                              k4a_image_get_width_pixels(m_image_c) * (int)sizeof(uint8_t),
+                              &body_index_in_colour_space);
+
+    if (result == K4A_RESULT_FAILED) {
+        printf("ERROR: Failed to create body index map in colour space\n");
+        return nullptr;
+    }
+
+    result = k4a_transformation_depth_image_to_color_camera_custom(m_transformation,
+                                                              m_image_d_org,
+                                                              m_body_index,
+                                                              depth_image_in_colour_space,
+                                                              body_index_in_colour_space,
+                                                              K4A_TRANSFORMATION_INTERPOLATION_TYPE_NEAREST,
+                                                              K4ABT_BODY_INDEX_MAP_BACKGROUND);
+    if (result == K4A_RESULT_FAILED) {
+        printf("ERROR: Failed to transform body index map to colour space\n");
+        return nullptr;
+    }
+
+    return body_index_in_colour_space;
 }
 #endif
 

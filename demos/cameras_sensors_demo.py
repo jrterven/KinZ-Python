@@ -80,6 +80,7 @@ while True:
         break
     elif k == ord('s'):
         cv2.imwrite("color.jpg", color_image)
+        cv2.imwrite("depth.png", depth_image)
         print("Image saved")
 
     # increment frame counter and calculate FPS

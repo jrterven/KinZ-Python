@@ -112,11 +112,11 @@ PYBIND11_MODULE(kinz, m) {
         .def("get_frames", &Kinect::get_frames, "Read frames from Kinect",
             py::arg("get_color")=true, py::arg("get_depth")=true,
             py::arg("get_ir")=true, py::arg("get_sensors")=false,
-            py::arg("get_body")=false, py::arg("get_body_index")=false)
+            py::arg("get_body")=false, py::arg("get_body_index")=false,
+            py::arg("align_depth")=false)
         .def("get_sensor_data", &Kinect::get_sensor_data, "Return sensor struct")
         .def("get_color_data", &Kinect::get_color_data, "Return color frame")
-        .def("get_depth_data", &Kinect::get_depth_data, "Return depth frame",
-            py::arg("align")=false)
+        .def("get_depth_data", &Kinect::get_depth_data, "Return depth frame")
         .def("get_ir_data", &Kinect::get_ir_data, "Return IR frame")
         .def("get_pointcloud", &Kinect::get_pointcloud, "Return point cloud")
         .def("get_pointcloud_color", &Kinect::get_pointcloud_color, "Return point cloud color values")
@@ -140,12 +140,18 @@ PYBIND11_MODULE(kinz, m) {
             "Map depth pixel coordinates to color image space")
         .def("map_coords_depth_to_3D", &Kinect::map_coords_depth_to_3D,
             "Map depth pixel coordinates to 3D space of depth camera",
-            py::arg("depth_coords"))
+            py::arg("depth_coords"), py::arg("depth_reference")=true)
+        .def("map_coords_3d_to_depth", &Kinect::map_coords_3d_to_depth,
+            "Map 3D coordinates to depth space",
+            py::arg("coords3d"), py::arg("depth_reference")=true)
+        .def("map_coords_3d_to_color", &Kinect::map_coords_3d_to_color,
+            "Map 3D coordinates to color space",
+            py::arg("coords3d"), py::arg("depth_reference")=true)
         #ifdef BODY
         .def("get_num_bodies", &Kinect::get_num_bodies, "Get number of bodies found")
         .def("get_bodies", &Kinect::get_bodies, "Get bodies list")
         .def("get_body_index_map", &Kinect::get_body_index_map, "Return body index map frame",
-            py::arg("returnId")=false)
+            py::arg("returnId")=false, py::arg("inColor")=false)
         #endif
         ;
 }
