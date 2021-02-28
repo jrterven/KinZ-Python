@@ -31,7 +31,8 @@ def main():
     prev_points_3d = []
     
     while True:
-        if kin.get_frames(get_color=True, get_depth=True, get_ir=False, align_depth=True):
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False,
+                          align_depth=True):
             # get buffer data from Kinect
             color_data = kin.get_color_data()
             depth_data = kin.get_depth_data()

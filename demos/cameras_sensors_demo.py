@@ -30,9 +30,10 @@ while True:
       t = cv2.getTickCount()
 
     # read kinect frames. If frames available return 1
-    if kin.get_frames(get_color=True, get_depth=True, get_ir=True, get_sensors=True):
+    if kin.get_frames(get_color=True, get_depth=True, get_ir=True, get_sensors=True,
+                      align_depth=False):
         color_data = kin.get_color_data()
-        depth_data = kin.get_depth_data(align=align_frames)
+        depth_data = kin.get_depth_data()
         ir_data = kin.get_ir_data()
         sensor_data = kin.get_sensor_data()
 

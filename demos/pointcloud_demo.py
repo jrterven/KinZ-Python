@@ -27,7 +27,8 @@ try:
         dt0 = datetime.now()
 
         # read kinect frames. If frames available return 1
-        if kin.get_frames(get_color=True, get_depth=True, get_ir=False):
+        if kin.get_frames(get_color=True, get_depth=True, get_ir=False,
+                          align_depth=False):
             count += 1
 
             # Get the pointcloud data and convert to Numpy (512 x 512 x 3, int16)

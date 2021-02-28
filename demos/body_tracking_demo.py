@@ -21,7 +21,7 @@ def main():
                     imu_sensors=False, body_tracking=True)
 
     # Get depth aligned with color?
-    align_frames = True
+    align_frames = False
     image_scale = 0.5    # visualized image scale
 
     # initialize fps counter
@@ -37,12 +37,12 @@ def main():
         if kin.get_frames(get_color=True, get_depth=True, get_ir=False,
                         get_sensors=False, get_body=True, get_body_index=True,
                         align_depth=align_frames):
+
             color_data = kin.get_color_data()
             depth_data = kin.get_depth_data()
             bodies = kin.get_bodies()
             body_index_data = kin.get_body_index_map(returnId=True, inColor=False)
 
-            #print("{:d} bodies detected.".format(num_bodies))
             print("bodies:", bodies)
 
             # extract frames to np arrays
