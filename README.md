@@ -51,4 +51,13 @@ The streaming speeds in Python are the following:
 pip uninstall kinz
 ```
 
+## Coming soon ...
+### Hand pose estimation
+Color image keypoints 
+![alt text](https://github.com/jrterven/KinZ-Python/blob/master/resources/0002-color_vis.jpg "RGB Image keypoints")
+
+Depth image keypoints
+![alt text](https://github.com/jrterven/KinZ-Python/blob/master/resources/0002-depth_vis.png "Depth Image keypoints")
+
+
 For more details checkout the [wiki pages](https://github.com/jrterven/KinZ-Python/wiki). 
