@@ -61,3 +61,15 @@ Depth image keypoints
 
 
 For more details checkout the [wiki pages](https://github.com/jrterven/KinZ-Python/wiki). 
+
+## Citation  
+```
+@article{terven_cordova_kinz,  
+title = {KinZ an azure kinect toolkit for Python and Matlab},  
+journal = {Science of Computer Programming},  
+pages = {102702},  
+year = {2021},  
+author = {Juan R. Terven and Diana M. Córdova-Esparza},  
+keywords = {Azure Kinect, Python, Matlab}}
+```
+[Link to paper](https://www.sciencedirect.com/science/article/pii/S0167642321000952)
